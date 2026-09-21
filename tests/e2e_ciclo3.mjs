@@ -205,7 +205,68 @@ async function testCU16() {
   record('16', 'CU-23 bitácora registra GENERA_REPORTE', bit.status === 200 && Array.isArray(bit.json) && bit.json.length > 0, `status=${bit.status} registros=${Array.isArray(bit.json) ? bit.json.length : '-'}`);
 }
 
-const tests = [testCU17, testCU16];
+/**
+ * CU07 - Utilizar vestidor virtual (RA) (RF22, RF23)
+ */
+async function testCU07() {
+  cuHeader('07', 'Utilizar vestidor virtual (RA)');
+
+  const origin = new URL(BASE).origin;
+
+  // 1) Producto con modelo 3D asignado -> modelo_3d_url no nulo
+  const det1 = await req('GET', '/catalogo/productos/1');
+  const okDet1 = det1.status === 200 && typeof det1.json.modelo_3d_url === 'string';
+  record('07', 'GET /catalogo/productos/1 -> modelo_3d_url presente', okDet1, `status=${det1.status} url=${det1.json?.modelo_3d_url ?? '-'}`);
+
+  // 2) Producto sin modelo 3D -> modelo_3d_url null
+  const det6 = await req('GET', '/catalogo/productos/6');
+  const okDet6 = det6.status === 200 && det6.json.modelo_3d_url === null;
+  record('07', 'GET /catalogo/productos/6 (sin GLB) -> modelo_3d_url null', okDet6, `status=${det6.status}`);
+
+  // 3) El GLB del producto es alcanzable desde el API (origen)
+  let glbOk = false;
+  if (okDet1 && det1.json.modelo_3d_url.startsWith('/static/models/')) {
+    try {
+      const r = await fetch(origin + det1.json.modelo_3d_url, { method: 'GET' });
+      const buf = Buffer.from(await r.arrayBuffer());
+      const magic = buf.subarray(0, 4).toString('ascii');
+      glbOk = r.status === 200 && magic === 'glTF' && buf.length > 1000;
+      record('07', `GET ${det1.json.modelo_3d_url} -> 200 glb válido`, glbOk, `status=${r.status} bytes=${buf.length} magic=${magic}`);
+    } catch (e) {
+      record('07', `GET ${det1.json.modelo_3d_url} -> 200 glb válido`, false, String(e));
+    }
+  }
+  void glbOk;
+
+  // 4) Bitácora (CU-23): sin token -> 401
+  const anon = await req('POST', '/bitacora', {
+    body: { accion: 'CONSULTA_VESTIDOR', entidad: 'Producto', entidad_id: 1, detalle: 'Vestidor virtual (ARCore): Camiseta Basica' },
+  });
+  record('07', 'POST /bitacora CONSULTA_VESTIDOR sin token -> 401', anon.status === 401, `status=${anon.status}`);
+
+  // 5) Cliente autenticado registra la consulta
+  const cliente = await login('cliente');
+  const bit = await req('POST', '/bitacora', {
+    token: cliente.token,
+    body: { accion: 'CONSULTA_VESTIDOR', entidad: 'Producto', entidad_id: 1, detalle: 'Vestidor virtual (ARCore): Camiseta Basica' },
+  });
+  const okBit = bit.status === 201 && bit.json !== null && typeof bit.json.id_bitacora === 'number';
+  record('07', 'POST /bitacora CONSULTA_VESTIDOR (cliente) -> 201', okBit, `status=${bit.status}`);
+
+  // 6) Admin puede listar el registro de la consulta (CU-23)
+  const admin = await login('admin');
+  const list = await req('GET', '/bitacora?accion=CONSULTA_VESTIDOR&limite=5', { token: admin.token });
+  const hayRegistro = list.status === 200 && Array.isArray(list.json) && list.json.length > 0;
+  record('07', 'CU-23 bitácora lista CONSULTA_VESTIDOR', hayRegistro, `status=${list.status} registros=${Array.isArray(list.json) ? list.json.length : '-'}`);
+
+  // 7) Producto con GLB incluye variantes para el vestidor
+  if (okDet1) {
+    const conVariantes = Array.isArray(det1.json.variantes) && det1.json.variantes.length > 0;
+    record('07', 'Detalle incluye variantes (tallas/colores)', conVariantes, `variantes=${Array.isArray(det1.json.variantes) ? det1.json.variantes.length : 0}`);
+  }
+}
+
+const tests = [testCU17, testCU16, testCU07];
 
 async function main() {
   try {
@@ -236,7 +297,7 @@ async function main() {
   let warns = 0;
   const order = [17, 16, 7];
   for (const cu of order) {
-    const rs = byCu.get(String(cu)) || [];
+    const rs = byCu.get(String(cu).padStart(2, '0')) || [];
     const f = rs.filter((r) => r.ok === false).length;
     const w = rs.filter((r) => r.ok === 'partial').length;
     const p = rs.filter((r) => r.ok === true).length;

@@ -89,6 +89,24 @@ class ApiClient {
     await prefs.remove('fashionstore_usuario');
   }
 
+  /// Resuelve la URL de un medio (modelo 3D, imagen) que puede venir relativa,
+  /// p. ej. `/static/models/prenda.glb`, contra el origen del API.
+  static String resolveMediaUrl(String path) {
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    if (path.startsWith('/')) {
+      final base = Uri.parse(baseUrl());
+      return Uri(
+        scheme: base.scheme,
+        host: base.host,
+        port: base.port,
+        pathSegments: path.split('/').where((s) => s.isNotEmpty).toList(),
+      ).toString();
+    }
+    return path;
+  }
+
   static dynamic _decode(http.Response res) {
     final isJson =
         res.headers['content-type']?.contains('application/json') ?? false;

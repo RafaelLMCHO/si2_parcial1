@@ -1,0 +1,76 @@
+group 'com.muzammil.arcore.flutter.plus'
+version '1.0-SNAPSHOT'
+
+buildscript {
+    ext.kotlin_version = '1.7.20'
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:7.3.1'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+rootProject.allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+
+android {
+    namespace "com.muzammil.arcore.flutter.plus"
+    compileSdk 34
+
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+    }
+    defaultConfig {
+        minSdkVersion 24
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    // Sceneform libraries use language constructs from Java 8.
+    // Add these compile options if targeting minSdkVersion < 26.
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+
+    lintOptions {
+        textReport = true
+    }
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:2.4.0"
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    // Sceneform 1.17.1 (2020) no es compatible con AGP 9 (namespace duplicado
+    // com.google.ar.sceneform en core/base). Se usa el fork mantenido
+    // Sceneform AndroidX (mismos paquetes com.google.ar.sceneform).
+    implementation 'com.gorisse.thomas.sceneform:core:1.23.0'
+    implementation 'com.gorisse.thomas.sceneform:ux:1.23.0'
+}
+
+// Force consistent AndroidX core version globally
+configurations.all {
+    resolutionStrategy {
+        force 'androidx.core:core:1.13.1'
+    }
+}
+
+// El plugin no usa @Parcelize ni kotlin-android-extensions; su runtime
+// (1.4.10) duplica clases con kotlin-parcelize-runtime del KGP moderno.
+configurations.all {
+    exclude group: 'org.jetbrains.kotlin', module: 'kotlin-android-extensions-runtime'
+}

@@ -201,6 +201,86 @@ Filtros comunes en todos: `fecha_desde`, `fecha_hasta` (YYYY-MM-DD),
   stock crítico, 0 errores de consola y 0 requests fallidas.
 - Móvil: `flutter analyze` **sin issues** (`fl_chart` + `share_plus`).
 
----
+## CU-07 — Utilizar vestidor virtual (RA)
 
-*(Última actualización: implementación de CU-17 y CU-16. CU-07 se agregará a este documento al implementarse.)*
+- **Actor:** Cliente (autenticado).
+- **Plataforma:** Móvil (Flutter) exclusivamente (depende de cámara/sensor AR).
+- **Requerimientos funcionales:** RF22, RF23 (+ CU-23, bitácora).
+- **Descripción:** Desde el detalle de una prenda con modelo 3D, el cliente abre el
+  vestidor virtual, observa la prenda superpuesta al entorno real (ARCore) o en un
+  visor 3D interactivo que sirve de respaldo cuando el dispositivo no soporta AR,
+  puede girarla/escalarla, quitarla, compartirla y la consulta queda registrada en
+  la bitácora.
+
+### Flujo principal
+1. Un cliente autenticado abre el detalle de un producto cuyo `modelo_3d_url` no es nulo.
+2. Pulsa "Probar con vestidor virtual (RA)".
+3. La app valida soporte de ARCore: si lo hay abre la cámara y detecta planos.
+4. Al tocar una superficie detectada coloca el modelo 3D (GLB servido por el backend) sobre ella.
+5. Con los controles girar (45°), cambiar escala y quitar ajusta o retira el modelo;
+   volver a tocar un plano recoloca la prenda.
+6. Comparte la prenda (texto con nombre y precio) vía share nativo.
+7. El sistema registra la consulta en la bitácora (`CONSULTA_VESTIDOR`).
+
+### Flujos alternativos
+- **Dispositivo sin soporte ARCore o error de cámara:** cae automáticamente al visor
+  3D interactivo (model-viewer: arrastrar gira, pellizcar acerca) con botón
+  "Intentar RA" para reintentar.
+- **Sin sesión iniciada:** la app muestra "Inicia sesión para usar el vestidor virtual".
+- **Producto sin modelo 3D:** el botón no se muestra en el detalle.
+
+### Clases del diseño (patrón ciclo 1)
+- **INTERFAZ «boundary»** — `backend/app/schemas/comercio.py` (`ProductoOut` con
+  `modelo_3d_url`), `mobile/lib/screens/vestidor_virtual_screen.dart`
+  (`VestidorVirtualScreen`), datamodel móvil `mobile/lib/models/producto.dart`.
+- **CONTROL «control»** — `mobile/lib/services/bitacora_service.dart`
+  (`registrarConsultaVestidor`), `backend/app/api/v1/endpoints/bitacora.py`
+  (`crear_registro`, POST) y `backend/app/main.py` (mount de `/static` para los GLB).
+- **ENTIDAD «entity»** — `backend/app/models/catalogo.py` (`Producto.modelo_3d_url`),
+  `backend/app/models/bitacora.py` (`Bitacora`).
+
+### Assets 3D (servidos por el backend en `/static/models/`)
+| Archivo | Origen (glTF del ciclo 1) | Tamaño |
+|--------|---------------------------|--------|
+| `prenda_casual.glb` | RobotExpressive | 464 KB |
+| `prenda_deportiva.glb` | Astronaut | 2.87 MB |
+| `prenda_elegante.glb` | CesiumMan | 491 KB |
+
+### Endpoints
+| Método | Ruta | Acceso | Descripción |
+|--------|------|--------|-------------|
+| GET | `/api/v1/catalogo/productos/{id}` | Público | Detalle con `modelo_3d_url` (relativo). |
+| GET | `/static/models/{archivo}.glb` | Público | Binario del modelo 3D (magic `glTF`). |
+| POST | `/api/v1/bitacora` | Autenticado | Registra `CONSULTA_VESTIDOR` (CU-23). |
+
+### UI — Móvil (Flutter)
+- Botón "Probar con vestidor virtual (RA)" en `producto_detalle_screen.dart`
+  (solo si `modelo3dUrl` no nulo); requiere sesión.
+- `vestidor_virtual_screen.dart`: modo AR con `arcore_flutter_plus` (ar_android_view,
+  tap sobre planos para colocar, controles girar/escala/quitar) y fallback con
+  `model_viewer_plus` (WebView) cuando ARCore no está disponible; compartición con
+  `share_plus`; registro de bitácora no bloqueante.
+- Dependencias nuevas: `arcore_flutter_plus 1.0.2` (vendored en
+  `mobile/packages/arcore_flutter_plus` porque Sceneform 1.17.1 original rompe con
+  Gradle 9.3.1/AGP 9.1: se usa el fork mantenido `com.gorisse.thomas.sceneform:core/ux
+  1.23.0`), `model_viewer_plus 1.10.0`, `vector_math 2.4.0`.
+
+### Criterios de aceptación
+1. Detalle con `modelo_3d_url` muestra el botón; sin GLB no lo muestra.
+2. Sin sesión → mensaje y no abre el vestidor.
+3. El GLB se sirve desde `/static/models/*.glb` (200, magic `glTF`).
+4. Dispositivo con ARCore: cámara activa, colocación por tap en plano,
+   girar/escalar/quitar y recolocación funcionan.
+5. Sin ARCore / error: visor 3D interactivo operativo y botón reintentar RA.
+6. Compartir abre el share nativo con nombre y precio de la prenda.
+7. Bitácora: POST `CONSULTA_VESTIDOR` → 401 anónimo, 201 (cliente autenticado) y
+   visible para el admin (CU-23).
+
+### Verificación (implementada)
+- Móvil: `flutter analyze` sin issues, `flutter test` OK, `flutter build apk --debug`
+  OK (Gradle 9.3.1 / AGP 9.1.0).
+- Backend: imagen Docker reconstruida (mount `/static`), BD viva con 8 productos
+  `UPDATE` a `modelo_3d_url`, GLB `200 + magic glTF` (463.988 / 2.869.044 / 490.956 B).
+- `tests/e2e_ciclo3.mjs` → **33/33 PASS**, con 7 nuevas verificaciones para CU-07.
+
+---

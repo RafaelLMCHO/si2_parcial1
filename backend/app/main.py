@@ -1,5 +1,8 @@
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.api.v1.router import api_router
 from app.core.config import get_settings
@@ -25,6 +28,12 @@ app.add_middleware(
 )
 
 app.include_router(api_router, prefix="/api/v1")
+
+# CU-07 · Vestidor virtual: modelos 3D (`.glb`) de los productos.
+# Las URLs se guardan relativas (`/static/models/...`) y el cliente
+# (móvil/web) las resuelve contra su origen; evita hardcodear el host.
+_STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
+app.mount("/static", StaticFiles(directory=_STATIC_DIR, html=False), name="static")
 
 
 @app.get("/", tags=["health"])

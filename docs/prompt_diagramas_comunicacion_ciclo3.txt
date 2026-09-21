@@ -177,4 +177,98 @@ Clases de apoyo: backend/app/core/ (dependencies)
 
 ================================================================================
 FIN DEL PROMPT
+================================================================================
+
+===============================================================================
+PROMPT PARA GENERAR DIAGRAMAS DE COMUNICACION UML
+CICLO #3 - FASHIONSTORE (SOLO BACKEND)
+CU-07 UTILIZAR VESTIDOR VIRTUAL (RA)
+===============================================================================
+
+Genera el diagrama de comuniacion UML del CU-07 del proyecto FashionStore
+(plataforma de comercio electronico de ropa, backend FastAPI + SQLAlchemy).
+El diagrama debe contener UNICAMENTE tres clases con sus estereotipos UML y sus
+metodos:
+
+  - Clase INTERFAZ    «boundary» / «interface»  -> Schemas Pydantic
+  - Clase CONTROL     «control»                 -> Endpoints FastAPI
+  - Clase ENTIDAD     «entity»                  -> Modelos ORM SQLAlchemy
+
+NO tomar en cuenta el frontend ni las librerias de AR del dispositivo. Basarse
+unicamente en el codigo del backend.
+
+-------------------------------------------------------------------------------
+1) UBICACION DE LAS CLASES EN EL BACKEND (CARPETAS)
+-------------------------------------------------------------------------------
+- Clase INTERFAZ:  backend/app/schemas/comercio.py (ProductoOut con el campo
+                   modelo_3d_url, ProductoVarianteOut)
+- Clase CONTROL:   backend/app/api/v1/endpoints/ia.py NO aplica;
+                   backend/app/api/v1/endpoints/catalogo.py (detalle_producto,
+                   GET /catalogo/productos/{producto_id})
+                   backend/app/api/v1/endpoints/bitacora.py (crear_registro,
+                   POST /bitacora)
+                   Servido de archivos estaticos: backend/app/main.py
+                   (StaticFiles montado en /static/models/*.glb)
+  Clases de apoyo del control:
+                   backend/app/core/dependencies.py (get_current_user)
+- Clase ENTIDAD:   backend/app/models/catalogo.py (Producto con modelo_3d_url,
+                   ProductoVariante)
+                   backend/app/models/usuario.py (Usuario)
+                   backend/app/models/bitacora.py (Bitacora)
+
+-------------------------------------------------------------------------------
+2) NOTACION REQUERIDA POR EL DIAGRAMA
+-------------------------------------------------------------------------------
+- Un rectangulo por objeto con el nombre de la clase y el estereotipo.
+- Un actor: Cliente (autenticado).
+- Mensajes numerados en orden temporal: 1, 1.1, 2, 3, ...
+- Formato de mensaje: N: nombreMetodo(parametros)
+- Indicar en el rectangulo o como nota la ruta de la carpeta donde vive la clase.
+- Incluir el flujo de retorno (respuesta) hacia el actor.
+
+-------------------------------------------------------------------------------
+3) CASO DE USO CON SUS CLASES Y METODOS
+-------------------------------------------------------------------------------
+
+CU07 - UTILIZAR VESTIDOR VIRTUAL (RA) (Actor: Cliente autenticado)
+  INTERFAZ (backend/app/schemas/comercio.py): ProductoOut (modelo_3d_url),
+             ProductoVarianteOut
+  CONTROL  (backend/app/api/v1/endpoints/catalogo.py): detalle_producto()
+           (backend/app/api/v1/endpoints/bitacora.py): crear_registro()
+           (backend/app/main.py): StaticFiles /static (servir GLB)
+           (backend/app/core/dependencies.py): get_current_user
+  ENTIDAD  (backend/app/models/catalogo.py): Producto, ProductoVariante
+           (backend/app/models/usuario.py): Usuario
+           (backend/app/models/bitacora.py): Bitacora
+  FLUJO:
+    1: Cliente -> Interfaz: GET /catalogo/productos/{producto_id}
+    2: Interfaz -> Control: detalle_producto(producto_id)
+    3: Control -> Entidad: consultar Producto (+ variantes, categoria,
+                            temporada, coleccion, proveedor)
+    4: Entidad -> Control: ProductoOut (con modelo_3d_url relativo)
+    5: Control -> Interfaz: ProductoOut
+    6: Interfaz -> Cliente: boton "Probar con vestidor virtual (RA)"
+                             (solo si modelo_3d_url != null)
+    7: Cliente -> Control (estaticos): GET /static/models/prenda_casual.glb
+    8: Control (estaticos) -> Cliente: binario glTF (magic glTF)
+    9: Cliente -> Interfaz: POST /bitacora (Bearer token)
+    10: Interfaz -> Control: crear_registro(CONSULTA_VESTIDOR, entidad=Producto,
+                              entidad_id, detalle, current)
+    11: Control -> Entidad: validar sesion (get_current_user, Usuario)
+    12: Control -> Entidad: insertar Bitacora (CU-23)
+    13: Entidad -> Control: registro id_bitacora
+    14: Control -> Interfaz: BitacoraOut (201)
+    15: Interfaz -> Cliente: vestidor virtual activo (RA o visor 3D)
+
+-------------------------------------------------------------------------------
+4) RESUMEN DE CARPETAS (para rotular cada clase en el diagrama)
+-------------------------------------------------------------------------------
+- Clase INTERFAZ  -> backend/app/schemas/
+- Clase CONTROL   -> backend/app/api/v1/endpoints/ (+ backend/app/main.py
+                     para el servido de /static)
+- Clase ENTIDAD   -> backend/app/models/
+Clases de apoyo: backend/app/core/ (dependencies)
+
+===============================================================================
+FIN DEL PROMPT
 =================================================================================

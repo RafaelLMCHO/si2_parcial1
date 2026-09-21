@@ -68,6 +68,7 @@ class Producto {
   final String? descripcion;
   final double precio;
   final String? imagenUrl;
+  final String? modelo3dUrl;
   final List<ProductoVariante> variantes;
 
   Producto({
@@ -76,6 +77,7 @@ class Producto {
     this.descripcion,
     required this.precio,
     this.imagenUrl,
+    this.modelo3dUrl,
     this.variantes = const [],
   });
 
@@ -85,6 +87,7 @@ class Producto {
         descripcion: json['descripcion'] as String?,
         precio: (json['precio'] as num).toDouble(),
         imagenUrl: json['imagen_url'] as String?,
+        modelo3dUrl: json['modelo_3d_url'] as String?,
         variantes: (json['variantes'] as List? ?? [])
             .map((e) => ProductoVariante.fromJson(e as Map<String, dynamic>))
             .toList(),
