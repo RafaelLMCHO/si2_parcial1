@@ -1,6 +1,6 @@
 /**
  * Test E2E - Casos de Uso del CICLO #3 (FashionStore)
- * CU17, CU16, CU07
+ * CU17, CU16, CU07, CU23
  *
  * Uso:
  *   node tests/e2e_ciclo3.mjs
@@ -59,7 +59,7 @@ async function req(method, path, { token, body } = {}) {
   } catch {
     json = text;
   }
-  return { status: res.status, json };
+  return { status: res.status, json, headers: res.headers };
 }
 
 async function login(role) {
@@ -266,7 +266,53 @@ async function testCU07() {
   }
 }
 
-const tests = [testCU17, testCU16, testCU07];
+async function testCU23() {
+  cuHeader('23', 'Bitácora (acceso solo administrador, web + móvil)');
+
+  const cliente = ctx.tokens.cliente.token;
+  const encargado = ctx.tokens.encargado.token;
+  const admin = ctx.tokens.admin.token;
+
+  // 1) Escritura transversal: cualquier usuario autenticado registra (CU-23)
+  const accion = 'TEST_CU23_' + String(Date.now()).slice(-6).padStart(6, '0');
+  const b = await req('POST', '/bitacora', {
+    token: cliente,
+    body: { accion, entidad: 'Producto', entidad_id: 5, detalle: 'registro de prueba CU-23' },
+  });
+  const okB = b.status === 201 && typeof b.json?.id_bitacora === 'number';
+  record('23', 'POST /bitacora (cliente) -> 201', okB, `status=${b.status}`);
+
+  // 2) Lectura restringida: solo el administrador
+  const cList = await req('GET', '/bitacora', { token: cliente });
+  record('23', 'GET /bitacora (cliente) -> 403', cList.status === 403, `status=${cList.status}`);
+  const eList = await req('GET', '/bitacora', { token: encargado });
+  record('23', 'GET /bitacora (encargado) -> 403', eList.status === 403, `status=${eList.status}`);
+
+  // 3) Admin lista y encuentra el registro recién creado (filtro por accion)
+  const aList = await req('GET', `/bitacora?accion=${accion}&limite=200`, { token: admin });
+  const totalA = Number(aList.headers?.get?.('x-total-count') ?? 0);
+  const okL = aList.status === 200 && Array.isArray(aList.json) && aList.json.some((r) => r.accion === accion);
+  record('23', 'GET /bitacora (admin) filtra por accion -> encontró registro', okL, `status=${aList.status} total=${totalA}`);
+
+  const reg = (Array.isArray(aList.json) ? aList.json : []).find((r) => r.accion === accion);
+  record('23', 'registro incluye usuario_nombre y detalle', reg?.usuario_nombre != null && reg?.detalle != null, `nombre=${reg?.usuario_nombre ?? '-'}`);
+
+  // 4) Paginación: pagina/limite con X-Total-Count consistente
+  const p1 = await req('GET', '/bitacora?pagina=1&limite=1', { token: admin });
+  const t1 = Number(p1.headers?.get?.('x-total-count') ?? 0);
+  const p2 = await req('GET', '/bitacora?pagina=2&limite=1', { token: admin });
+  const t2 = Number(p2.headers?.get?.('x-total-count') ?? 0);
+  const okPag =
+    p1.status === 200 &&
+    p2.status === 200 &&
+    t1 > 0 &&
+    t1 === t2 &&
+    Array.isArray(p1.json) && p1.json.length === 1 &&
+    Array.isArray(p2.json) && p2.json.length === 1;
+  record('23', 'paginación pagina/limite con X-Total-Count estable', okPag, `total=${t1}/${t2} p1=${Array.isArray(p1.json) ? p1.json.length : '-'} p2=${Array.isArray(p2.json) ? p2.json.length : '-'}`);
+}
+
+const tests = [testCU17, testCU16, testCU07, testCU23];
 
 async function main() {
   try {
@@ -295,7 +341,7 @@ async function main() {
   console.log('\n\x1b[1m================ RESUMEN POR CASO DE USO ================\x1b[0m');
   let fails = 0;
   let warns = 0;
-  const order = [17, 16, 7];
+  const order = [17, 16, 7, 23];
   for (const cu of order) {
     const rs = byCu.get(String(cu).padStart(2, '0')) || [];
     const f = rs.filter((r) => r.ok === false).length;

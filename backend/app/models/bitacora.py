@@ -35,3 +35,8 @@ class Bitacora(Base):
     usuario: Mapped[Optional["Usuario"]] = relationship(
         foreign_keys=[usuario_id]
     )
+
+    @property
+    def usuario_nombre(self) -> Optional[str]:
+        """Nombre legible del usuario (para los visores de bitácora)."""
+        return self.usuario.nombre if self.usuario else None

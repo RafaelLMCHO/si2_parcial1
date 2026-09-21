@@ -6,6 +6,7 @@ import '../services/carrito_service.dart';
 import '../services/catalogo_service.dart';
 import '../services/ia_service.dart';
 import 'carrito_screen.dart';
+import 'bitacora_screen.dart';
 import 'login_screen.dart';
 import 'mis_reservas_screen.dart';
 import 'producto_detalle_screen.dart';
@@ -24,6 +25,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
   List<Producto>? _recomendados;
   String? _error;
   bool _esPersonalDeGestion = false;
+  bool _esAdmin = false;
 
   @override
   void initState() {
@@ -39,6 +41,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     if (!mounted) return;
     setState(() {
       _esPersonalDeGestion = rol == 'admin' || rol == 'encargado';
+      _esAdmin = rol == 'admin';
     });
   }
 
@@ -99,6 +102,13 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     if (mounted) setState(() {});
   }
 
+  Future<void> _abrirBitacora() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const BitacoraScreen()),
+    );
+    if (mounted) setState(() {});
+  }
+
   Future<void> _abrirReportes() async {
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const ReportesScreen()),
@@ -123,6 +133,12 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
       appBar: AppBar(
         title: const Text('Catálogo'),
         actions: [
+          if (_esAdmin)
+            IconButton(
+              icon: const Icon(Icons.history),
+              tooltip: 'Bitácora (CU-23)',
+              onPressed: _abrirBitacora,
+            ),
           if (_esPersonalDeGestion)
             IconButton(
               icon: const Icon(Icons.insights_outlined),

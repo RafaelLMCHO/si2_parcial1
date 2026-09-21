@@ -14,6 +14,13 @@ class ApiException implements Exception {
   String toString() => message;
 }
 
+class HttpResult {
+  final dynamic body;
+  final Map<String, String> headers;
+
+  HttpResult(this.body, this.headers);
+}
+
 class ApiClient {
   static const _envUrl = String.fromEnvironment('API_URL');
 
@@ -36,6 +43,27 @@ class ApiClient {
     Map<String, String>? query,
     bool auth = true,
   }) async {
+    final res = await _getRaw(path, query, auth);
+    return _decode(res);
+  }
+
+  /// Igual que [get] pero además expone los headers de la respuesta
+  /// (p. ej. `X-Total-Count` para la paginación de la bitácora).
+  static Future<HttpResult> getResult(
+    String path, {
+    Map<String, String>? query,
+    bool auth = true,
+  }) async {
+    final res = await _getRaw(path, query, auth);
+    final body = _decode(res);
+    return HttpResult(body, res.headers);
+  }
+
+  static Future<http.Response> _getRaw(
+    String path,
+    Map<String, String>? query,
+    bool auth,
+  ) async {
     var uri = Uri.parse('${baseUrl()}$path');
     if (query != null && query.isNotEmpty) {
       uri = uri.replace(queryParameters: query);
@@ -45,8 +73,7 @@ class ApiClient {
       final token = await _token();
       if (token != null) headers['Authorization'] = 'Bearer $token';
     }
-    final res = await http.get(uri, headers: headers);
-    return _decode(res);
+    return http.get(uri, headers: headers);
   }
 
   static Future<dynamic> post(

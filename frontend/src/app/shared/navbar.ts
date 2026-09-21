@@ -58,6 +58,12 @@ export const NAV_ITEMS: NavItem[] = [
     icon: 'insights',
     roles: ['admin', 'encargado'],
   },
+  {
+    ruta: '/gestion/bitacora',
+    label: 'Bitácora',
+    icon: 'history',
+    roles: ['admin'],
+  },
 ];
 
 const ROL_LABELS: Record<string, string> = {

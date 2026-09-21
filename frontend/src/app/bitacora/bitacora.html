@@ -1,0 +1,129 @@
+<app-navbar></app-navbar>
+
+<div class="page-container">
+  <div class="header-section">
+    <h1 class="page-title">
+      <mat-icon class="title-icon">history</mat-icon>
+      Bitácora (CU-23)
+    </h1>
+    <p class="subtitle">
+      Registro de acciones del sistema. Acceso exclusivo para administradores.
+    </p>
+  </div>
+
+  <div class="filters-bar">
+    <mat-form-field appearance="outline" dense>
+      <mat-label>Acción</mat-label>
+      <input
+        matInput
+        [(ngModel)]="accion"
+        placeholder="Ej: CONSULTA_VESTIDOR, login, venta..."
+        (keyup.enter)="buscar()"
+      />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" dense>
+      <mat-label>Usuario</mat-label>
+      <mat-select [(ngModel)]="usuarioId">
+        <mat-option [value]="null">Todos</mat-option>
+        <mat-option *ngFor="let u of usuarios()" [value]="u.id_usuario">
+          {{ u.nombre }} ({{ u.email }})
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" dense>
+      <mat-label>Entidad</mat-label>
+      <input matInput [(ngModel)]="entidad" placeholder="Ej: Producto, Reserva" (keyup.enter)="buscar()" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" dense>
+      <mat-label>Desde</mat-label>
+      <input matInput type="date" [(ngModel)]="fechaDesde" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" dense>
+      <mat-label>Hasta</mat-label>
+      <input matInput type="date" [(ngModel)]="fechaHasta" />
+    </mat-form-field>
+
+    <div class="btn-group">
+      <button mat-raised-button color="primary" [disabled]="cargando()" (click)="buscar()">
+        <mat-icon>search</mat-icon> Buscar
+      </button>
+      <button mat-stroked-button [disabled]="cargando()" (click)="limpiar()">
+        <mat-icon>restart_alt</mat-icon> Limpiar
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="error()" class="error-box">
+    <mat-icon color="warn">error_outline</mat-icon>
+    <p>{{ error() }}</p>
+    <button mat-raised-button color="primary" (click)="buscar()">Reintentar</button>
+  </div>
+
+  <div *ngIf="cargando() && registros().length === 0" class="spinner-box">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Cargando bitácora...</p>
+  </div>
+
+  <p class="resumen" *ngIf="!cargando() && registros().length > 0">
+    {{ total() }} registro{{ total() === 1 ? '' : 's' }} en total ·
+    mostrando {{ registros().length }}
+  </p>
+
+  <div *ngIf="!cargando() && !error() && registros().length === 0" class="aviso-box">
+    <mat-icon>search_off</mat-icon>
+    <p>No hay registros para los criterios seleccionados.</p>
+  </div>
+
+  <div class="table-responsive" *ngIf="registros().length > 0">
+    <table mat-table [dataSource]="registros()" class="data-tabla">
+      <ng-container matColumnDef="fecha">
+        <th mat-header-cell *matHeaderCellDef>Fecha</th>
+        <td mat-cell *matCellDef="let r">{{ r.fecha | date: 'dd/MM/yyyy HH:mm:ss' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="usuario">
+        <th mat-header-cell *matHeaderCellDef>Usuario</th>
+        <td mat-cell *matCellDef="let r">
+          <span [matTooltip]="r.usuario_id ? 'ID ' + r.usuario_id : ''">{{ usuarioLabel(r) }}</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="accion">
+        <th mat-header-cell *matHeaderCellDef>Acción</th>
+        <td mat-cell *matCellDef="let r"><code>{{ r.accion }}</code></td>
+      </ng-container>
+
+      <ng-container matColumnDef="entidad">
+        <th mat-header-cell *matHeaderCellDef>Entidad</th>
+        <td mat-cell *matCellDef="let r">
+          {{ r.entidad ?? '-' }}{{ r.entidad_id != null ? ' #' + r.entidad_id : '' }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="detalle">
+        <th mat-header-cell *matHeaderCellDef>Detalle</th>
+        <td mat-cell *matCellDef="let r">
+          <span class="detalle" [matTooltip]="r.detalle ?? ''">{{ r.detalle ?? '-' }}</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="origen">
+        <th mat-header-cell *matHeaderCellDef>Origen</th>
+        <td mat-cell *matCellDef="let r"><code>{{ r.ip_origen ?? '-' }}</code></td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columnas"></tr>
+      <tr mat-row *matRowDef="let row; columns: columnas"></tr>
+    </table>
+  </div>
+
+  <div class="paginador" *ngIf="registros().length > 0 && registros().length < total()">
+    <button mat-stroked-button [disabled]="cargando()" (click)="cargarMas()">
+      <mat-icon>more_horiz</mat-icon> Cargar más
+    </button>
+  </div>
+</div>

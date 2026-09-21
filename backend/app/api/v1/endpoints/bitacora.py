@@ -1,8 +1,8 @@
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from sqlalchemy.orm import Session, joinedload
 
 from app.core.dependencies import get_current_user, require_roles, get_db
 from app.models.bitacora import Bitacora
@@ -73,6 +73,7 @@ def crear_registro(
 
 @router.get("", response_model=list[BitacoraOut])
 def listar_bitacora(
+    response: Response,
     db: Session = Depends(get_db),
     usuario_actual=Depends(require_roles(RolUsuario.admin)),
     usuario_id: Optional[int] = Query(None, description="Filtrar por usuario"),
@@ -81,9 +82,14 @@ def listar_bitacora(
     fecha_desde: Optional[str] = Query(None, description="YYYY-MM-DD"),
     fecha_hasta: Optional[str] = Query(None, description="YYYY-MM-DD"),
     limite: int = Query(200, ge=1, le=1000),
+    pagina: int = Query(1, ge=1, description="Página (1-based)"),
 ):
-    """CU-23 · Consultar bitácora con filtros (usuario, tipo de evento, fecha)."""
-    q = db.query(Bitacora)
+    """CU-23 · Consultar bitácora con filtros (usuario, tipo de evento, fecha).
+
+    Solo administrador. Paginado: el total de registros que coinciden con los
+    filtros se devuelve en el header ``X-Total-Count``.
+    """
+    q = db.query(Bitacora).options(joinedload(Bitacora.usuario))
     if usuario_id:
         q = q.filter(Bitacora.usuario_id == usuario_id)
     if accion:
@@ -96,5 +102,12 @@ def listar_bitacora(
     if fecha_hasta:
         f = datetime.fromisoformat(fecha_hasta)
         q = q.filter(Bitacora.fecha <= f)
-    q = q.order_by(Bitacora.fecha.desc()).limit(limite)
-    return q.all()
+    total = q.count()
+    registros = (
+        q.order_by(Bitacora.fecha.desc(), Bitacora.id_bitacora.desc())
+        .offset((pagina - 1) * limite)
+        .limit(limite)
+        .all()
+    )
+    response.headers["X-Total-Count"] = str(total)
+    return registros

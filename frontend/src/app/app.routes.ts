@@ -13,6 +13,7 @@ import { CarritoComponent } from './carrito/carrito';
 import { MisReservasComponent } from './reservas/mis-reservas';
 import { PrepararReservasComponent } from './encargado/reservas/preparar-reservas/preparar-reservas';
 import { ReportesComponent } from './reportes/reportes';
+import { BitacoraComponent } from './bitacora/bitacora';
 import {
   adminGuard,
   authGuard,
@@ -89,6 +90,11 @@ export const routes: Routes = [
     path: 'reportes',
     component: ReportesComponent,
     canActivate: [authGuard, reportesGuard],
+  },
+  {
+    path: 'gestion/bitacora',
+    component: BitacoraComponent,
+    canActivate: [authGuard, adminGuard],
   },
   { path: '**', redirectTo: 'dashboard' },
 ];

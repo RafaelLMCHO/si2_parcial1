@@ -18,6 +18,9 @@ analyzer:
     - windows/**
     - macos/**
     - linux/**
+    # Plugin vendoreado (arcore_flutter_plus): se mantiene como dependencia de
+    # terceros, no se analizan sus fuentes para no reportar lints heredados.
+    - packages/**
 
 linter:
   # The lint rules applied to this project can be customized in the

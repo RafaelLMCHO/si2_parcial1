@@ -9,6 +9,7 @@ UI (web y móvil) y criterios de aceptación.
 | CU-17 | Recibir recomendaciones de IA     | Web + Móvil |
 | CU-16 | Generar reportes y dashboards     | Web + Móvil |
 | CU-07 | Utilizar vestidor virtual (RA)    | Web + Móvil (pendiente) |
+| CU-23 | Registrar acciones en bitácora    | Web + Móvil |
 
 ---
 
@@ -281,6 +282,76 @@ Filtros comunes en todos: `fecha_desde`, `fecha_hasta` (YYYY-MM-DD),
   OK (Gradle 9.3.1 / AGP 9.1.0).
 - Backend: imagen Docker reconstruida (mount `/static`), BD viva con 8 productos
   `UPDATE` a `modelo_3d_url`, GLB `200 + magic glTF` (463.988 / 2.869.044 / 490.956 B).
-- `tests/e2e_ciclo3.mjs` → **33/33 PASS**, con 7 nuevas verificaciones para CU-07.
+- `tests/e2e_ciclo3.mjs` → **39/39 PASS**, con 7 verificaciones para CU-07 y 6 para CU-23.
+
+---
+
+## CU-23 — Registrar acciones en bitácora
+
+- **Actor:** Administrador (lectura/consulta); transversal (escritura, cualquier módulo autenticado).
+- **Plataforma:** Backend (registro y consulta), Web (visor admin) + Móvil (visor admin).
+- **Requerimientos funcionales:** transversal a RF (RF20–RF25 registran `CONSULTA_VESTIDOR`,
+  `CONSULTA_RECOMENDACIONES`, `GENERA_REPORTE`, login, CRUD, ventas, reservas, pagos).
+- **Descripción:** El sistema registra las acciones relevantes de los usuarios con su
+  identidad, acción, entidad afectada, detalle e IP de origen. Solo el **administrador**
+  puede consultar y filtrar la bitácora (criterio del usuario); el resto del sistema la
+  escribe de forma transversal y no bloqueante.
+
+### Flujo principal
+1. Un módulo del sistema ejecuta una acción auditable (login, CRUD, venta, reserva,
+   pago, consulta de recomendaciones, uso del vestidor, generación de reporte…).
+2. La acción queda registrada en `bitacoras` (usuario, acción, entidad, detalle, IP, fecha).
+3. El administrador abre la bitácora (web `/gestion/bitacora` o móvil).
+4. Filtra por acción, usuario, entidad y rango de fechas.
+5. El sistema devuelve los eventos ordenados de más reciente a más antiguo, paginados.
+
+### Flujos alternativos
+- **Usuario no admin intenta consultar:** el backend responde **403** (el visor ni se
+  muestra: en web el item de menú y la ruta son solo `admin`; en móvil el acceso solo aparece
+  con rol admin).
+- **Sin token:** 401.
+- **Falla al registrar (escritura):** no interrumpe la operación principal (no bloqueante).
+
+### Clases del diseño (patrón ciclo 1)
+- **INTERFAZ «boundary»** — `frontend/src/app/bitacora/bitacora.ts|html|scss`
+  (`BitacoraComponent`), `mobile/lib/screens/bitacora_screen.dart` (`BitacoraScreen`),
+  `backend/app/schemas/bitacora.py` (`BitacoraOut` con `usuario_nombre`).
+- **CONTROL «control»** — `backend/app/api/v1/endpoints/bitacora.py` (`registrar`,
+  `crear_registro` POST, `listar_bitacora` GET con filtros + paginación `X-Total-Count`),
+  `frontend/src/app/services/bitacora.service.ts`, `mobile/lib/services/bitacora_service.dart`
+  (`listar`), `frontend/src/app/services/usuarios.service.ts` (filtro por usuario).
+- **ENTIDAD «entity»** — `backend/app/models/bitacora.py` (`Bitacora` con relación
+  `usuario` y propiedad `usuario_nombre`), tabla `bitacoras` (`database/01_creacion_base_datos.sql`).
+
+### Endpoints
+| Método | Ruta | Acceso | Descripción |
+|--------|------|--------|-------------|
+| POST | `/api/v1/bitacora` | Autenticado | Registra un evento (transversal, no bloqueante). |
+| GET | `/api/v1/bitacora` | **Solo admin** | Consulta con filtros (`usuario_id`, `accion`, `entidad`, `fecha_desde`, `fecha_hasta`) y paginación (`pagina`, `limite`); total en header `X-Total-Count`. |
+
+### UI — Web (Angular, solo admin)
+- Ruta `gestion/bitacora` protegida con `adminGuard`; item de menú "Bitácora" (`roles: ['admin']`).
+- Filtros: acción (texto), usuario (select desde `/usuarios`), entidad (texto), rango de fechas.
+- Tabla Material: fecha, usuario (con `usuario_nombre`), acción, entidad+ID, detalle y IP;
+  botón **Cargar más** (paginación).
+
+### UI — Móvil (Flutter, solo admin)
+- Icono `history` en el AppBar del catálogo solo si `rol == 'admin'` (el backend igual 403).
+- `bitacora_screen.dart`: filtros acción/entidad/fechas, lista de tarjetas con
+  pull-to-refresh y **Cargar más**; maneja 403 como error de permisos.
+
+### Criterios de aceptación
+1. POST `/bitacora` → 401 anónimo, 201 autenticado.
+2. GET `/bitacora` → 403 cliente/encargado/cajero, 200 admin.
+3. Admin filtra por acción/usuario/entidad/fechas y obtiene los coincidentes con
+   `usuario_nombre` poblado.
+4. Paginación con `pagina`/`limite` y total estable en `X-Total-Count`.
+5. Web: item de menú y ruta solo visibles para admin; cliente no ve "Bitácora".
+6. Móvil: botón de bitácora solo para rol admin.
+
+### Verificación (implementada)
+- `tests/e2e_ciclo3.mjs` → **39/39 PASS** (CU17: 6, CU16: 20, CU07: 7, CU23: 6).
+- Móvil: `flutter analyze` sin issues, `flutter test` OK, `flutter build apk --debug` OK.
+- Backend: imagen Docker reconstruida con paginación y `usuario_nombre`.
 
 ---

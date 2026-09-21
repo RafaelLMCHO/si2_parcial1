@@ -271,4 +271,94 @@ Clases de apoyo: backend/app/core/ (dependencies)
 
 ===============================================================================
 FIN DEL PROMPT
+===============================================================================
+
+==============================================================================
+PROMPT PARA GENERAR DIAGRAMAS DE COMUNICACION UML
+CICLO #3 - FASHIONSTORE (SOLO BACKEND)
+CU-23 REGISTRAR ACCIONES EN BITACORA
+==============================================================================
+
+Genera el diagrama de comuniacion UML del CU-23 del proyecto FashionStore
+(plataforma de comercio electronico de ropa, backend FastAPI + SQLAlchemy).
+El diagrama debe contener UNICAMENTE tres clases con sus estereotipos UML y sus
+metodos:
+
+  - Clase INTERFAZ    �boundary� / �interface�  -> Schemas Pydantic
+  - Clase CONTROL     �control�                 -> Endpoints FastAPI
+  - Clase ENTIDAD     �entity�                  -> Modelos ORM SQLAlchemy
+
+NO tomar en cuenta el frontend. Basarse unicamente en el codigo del backend.
+
+--------------------------------------------------------------------------------
+1) UBICACION DE LAS CLASES EN EL BACKEND (CARPETAS)
+--------------------------------------------------------------------------------
+- Clase INTERFAZ:  backend/app/schemas/bitacora.py (BitacoraOut)
+- Clase CONTROL:   backend/app/api/v1/endpoints/bitacora.py
+                   (crear_registro, listar_bitacora)
+  Clases de apoyo del control:
+                   backend/app/core/dependencies.py (get_current_user)
+- Clase ENTIDAD:   backend/app/models/bitacora.py (Bitacora)
+                   backend/app/models/usuario.py (Usuario)
+
+--------------------------------------------------------------------------------
+2) NOTACION REQUERIDA POR EL DIAGRAMA
+--------------------------------------------------------------------------------
+- Un rectangulo por objeto con el nombre de la clase y el estereotipo.
+- Un actor: Administrador (consulta) y cualquier usuario autenticado (escritura).
+- Mensajes numerados en orden temporal: 1, 1.1, 2, 3, ...
+- Formato de mensaje: N: nombreMetodo(parametros)
+- Indicar en el rectangulo o como nota la ruta de la carpeta donde vive la clase.
+- Incluir el flujo de retorno (respuesta) hacia el actor.
+
+--------------------------------------------------------------------------------
+3) CASO DE USO CON SUS CLASES Y METODOS
+--------------------------------------------------------------------------------
+
+CU23 - REGISTRAR ACCIONES EN BITACORA
+  INTERFAZ (backend/app/schemas/bitacora.py): BitacoraOut (usuario_nombre)
+  CONTROL  (backend/app/api/v1/endpoints/bitacora.py): crear_registro(),
+           listar_bitacora(filtros accion/entidad/usuario_id/fechas,
+           pagina, limite)
+           (backend/app/core/dependencies.py): get_current_user
+  ENTIDAD  (backend/app/models/bitacora.py): Bitacora (relacion usuario)
+           (backend/app/models/usuario.py): Usuario
+  FLUJO (escritura transversal):
+    1: Actor -> Interfaz: POST /bitacora (Bearer token)
+    2: Interfaz -> Control: crear_registro(accion, entidad, entidad_id,
+                            detalle, current)
+    3: Control -> Entidad: validar sesion (get_current_user, Usuario)
+    4: Control -> Entidad: insertar Bitacora
+    5: Entidad -> Control: registro id_bitacora
+    6: Control -> Interfaz: BitacoraOut (201)
+    7: Interfaz -> Actor: BitacoraOut (201)
+  FLUJO (consulta solo admin):
+    8: Admin -> Interfaz: GET /bitacora?accion=...&entidad=...&
+                            usuario_id=...&fecha_desde=..&fecha_hasta=..&
+                            pagina=1&limite=100 (Bearer token)
+    9: Interfaz -> Control: listar_bitacora(filtros, pagina, limite, current)
+    10: Control -> Entidad: validar rol admin (get_current_user, Usuario.rol)
+    11: Control -> Entidad: consultar Bitacora (joinedload Usuario,
+                              orden fecha desc, LIMIT/OFFSET)
+    12: Entidad -> Control: BitacoraOut[] (con usuario_nombre)
+    13: Control -> Interfaz: BitacoraOut[] + header X-Total-Count
+    14: Interfaz -> Admin: BitacoraOut[]
+  FLUJO (no autorizado):
+    15: Cliente -> Interfaz: GET /bitacora (Bearer token)
+    16: Interfaz -> Control: listar_bitacora(...)
+    17: Control -> Entidad: validar rol -> NO admin
+    18: Entidad -> Control: 403 Forbidden
+    19: Control -> Interfaz: 403 Forbidden
+    20: Interfaz -> Cliente: 403 Forbidden (sin visor en web/movil tampoco)
+
+--------------------------------------------------------------------------------
+4) RESUMEN DE CARPETAS (para rotular cada clase en el diagrama)
+--------------------------------------------------------------------------------
+- Clase INTERFAZ  -> backend/app/schemas/
+- Clase CONTROL   -> backend/app/api/v1/endpoints/
+- Clase ENTIDAD   -> backend/app/models/
+Clases de apoyo: backend/app/core/ (dependencies)
+
+===============================================================================
+FIN DEL PROMPT
 =================================================================================
