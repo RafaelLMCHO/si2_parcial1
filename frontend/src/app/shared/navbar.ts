@@ -38,6 +38,30 @@ export const NAV_ITEMS: NavItem[] = [
     icon: 'manage_accounts',
     roles: ['admin'],
   },
+  {
+    ruta: '/gestion/proveedores',
+    label: 'Gestión de proveedores',
+    icon: 'local_shipping',
+    roles: ['admin'],
+  },
+  {
+    ruta: '/gestion/temporadas',
+    label: 'Temporadas y colecciones',
+    icon: 'event_repeat',
+    roles: ['admin'],
+  },
+  {
+    ruta: '/gestion/pagos',
+    label: 'Gestión de pagos',
+    icon: 'payments',
+    roles: ['admin', 'encargado', 'cajero'],
+  },
+  {
+    ruta: '/gestion/inventario',
+    label: 'Gestión de inventario',
+    icon: 'inventory_2',
+    roles: ['admin', 'encargado'],
+  },
   { ruta: '/sucursales', label: 'Sucursales', icon: 'store' },
   {
     ruta: '/reservas',
@@ -46,12 +70,23 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ['cliente', 'admin'],
   },
   {
+    ruta: '/compras',
+    label: 'Mis Compras',
+    icon: 'receipt_long',
+    roles: ['cliente', 'admin'],
+  },
+  {
     ruta: '/encargado/reservas/pendientes',
     label: 'Preparar Reservas',
     icon: 'inventory_2',
-    roles: ['encargado'],
+    roles: ['admin', 'encargado'],
   },
-  { ruta: '/ventas', label: 'Ventas / POS', icon: 'point_of_sale' },
+  {
+    ruta: '/ventas',
+    label: 'Ventas / POS',
+    icon: 'point_of_sale',
+    roles: ['cajero', 'encargado', 'admin'],
+  },
   {
     ruta: '/reportes',
     label: 'Reportes',

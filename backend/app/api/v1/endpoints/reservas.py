@@ -141,16 +141,17 @@ def crear_reserva(
     return reserva
 
 
-@router.get("/pendientes", response_model=list[ReservaOut], summary="Listar reservas pendientes (Encargado)")
+@router.get("/pendientes", response_model=list[ReservaOut], summary="Listar reservas pendientes (Encargado/Admin)")
 def list_reservas_pendientes(
     db: Session = Depends(get_db),
     current: Usuario = Depends(encargado_required),
 ):
-    query = db.query(Reserva).filter(
-        Reserva.sucursal_id == current.sucursal_id,
-        Reserva.estado == "pendiente"
-    )
-    return query.order_by(Reserva.fecha_creacion.desc()).all()
+    query = db.query(Reserva)
+    if current.rol == "encargado":
+        # Encargado: solo las de su sucursal.
+        query = query.filter(Reserva.sucursal_id == current.sucursal_id)
+    # Admin: ve las pendientes de todas las sucursales.
+    return query.filter(Reserva.estado == "pendiente").order_by(Reserva.fecha_creacion.desc()).all()
 
 
 @router.get("/", response_model=list[ReservaOut], summary="Consultar reservas (CU9)")
@@ -217,7 +218,7 @@ def preparar_reserva(
     current: Usuario = Depends(encargado_required),
 ):
     reserva = _reserva_con_items(db, reserva_id)
-    if reserva.sucursal_id != current.sucursal_id:
+    if current.rol != "admin" and reserva.sucursal_id != current.sucursal_id:
         raise HTTPException(status_code=403, detail="Esta reserva pertenece a otra sucursal")
     if reserva.estado != "pendiente":
         raise HTTPException(status_code=400, detail="Solo se preparan reservas pendientes")

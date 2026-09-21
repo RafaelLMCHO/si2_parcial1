@@ -20,10 +20,12 @@ export const adminGuard: CanActivateFn = () => {
     : router.createUrlTree(['/dashboard']);
 };
 
+/** Preparación de reservas (CU-13): administradores y encargados. */
 export const encargadoGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
-  return auth.usuario()?.rol === 'encargado'
+  const rol = auth.usuario()?.rol;
+  return rol === 'admin' || rol === 'encargado'
     ? true
     : router.createUrlTree(['/dashboard']);
 };
