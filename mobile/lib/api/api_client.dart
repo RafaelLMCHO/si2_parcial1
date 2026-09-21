@@ -86,6 +86,7 @@ class ApiClient {
   static Future<void> clearSession() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('fashionstore_token');
+    await prefs.remove('fashionstore_usuario');
   }
 
   static dynamic _decode(http.Response res) {

@@ -109,6 +109,15 @@ export class DashboardComponent {
 
   readonly quick = computed(() => {
     const accesos = [...this.quickBase];
+    if (this.usuario()?.rol === 'admin' || this.usuario()?.rol === 'encargado') {
+      accesos.unshift({
+        ruta: '/reportes',
+        icon: 'insights',
+        titulo: 'Reportes y dashboards',
+        desc: 'KPIs de ventas, inventario, reservas y tendencias por temporada.',
+        color: 'q-amber',
+      });
+    }
     if (this.usuario()?.rol === 'admin') {
       accesos.unshift({
         ruta: '/gestion/productos',

@@ -1,0 +1,198 @@
+<app-navbar></app-navbar>
+
+<div class="page-container">
+  <div class="header-section no-print">
+    <h1 class="page-title">
+      <mat-icon class="title-icon">insights</mat-icon>
+      Generar Reportes y Dashboards (CU-16)
+    </h1>
+    <p class="subtitle">
+      Indicadores clave de negocio: ventas por sucursal, productos más vendidos, rotación,
+      stock crítico, reservas y tendencias por temporada.
+    </p>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filters-bar no-print">
+    <mat-form-field appearance="outline" dense>
+      <mat-label>Desde</mat-label>
+      <input matInput type="date" [value]="fechaDesde()" (input)="fechaDesde.set(inputD.value)" #inputD />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" dense>
+      <mat-label>Hasta</mat-label>
+      <input matInput type="date" [value]="fechaHasta()" (input)="fechaHasta.set(inputH.value)" #inputH />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" dense *ngIf="!esEncargado()">
+      <mat-label>Sucursal</mat-label>
+      <mat-select [value]="sucursalId()" (selectionChange)="sucursalId.set($event.value)">
+        <mat-option [value]="null">Todas las sucursales</mat-option>
+        <mat-option *ngFor="let s of sucursales()" [value]="s.id_sucursal">
+          {{ s.nombre }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" dense *ngIf="esEncargado()">
+      <mat-label>Sucursal (fija)</mat-label>
+      <mat-select disabled [value]="sucursalId()">
+        <mat-option [value]="usuario()?.sucursal_id">
+          {{ usuario()?.sucursal_id }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" dense>
+      <mat-label>Categoría</mat-label>
+      <mat-select [value]="categoriaId()" (selectionChange)="categoriaId.set($event.value)">
+        <mat-option [value]="null">Todas las categorías</mat-option>
+        <mat-option *ngFor="let c of categorias()" [value]="c.id_categoria">
+          {{ c.nombre }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" dense>
+      <mat-label>Temporada</mat-label>
+      <mat-select [value]="temporadaId()" (selectionChange)="temporadaId.set($event.value)">
+        <mat-option [value]="null">Todas las temporadas</mat-option>
+        <mat-option *ngFor="let t of temporadas()" [value]="t.id_temporada">
+          {{ t.nombre }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <div class="btn-group">
+      <button mat-raised-button color="primary" [disabled]="cargando()" (click)="generar()">
+        <mat-icon>{{ cargando() ? 'sync' : 'query_stats' }}</mat-icon>
+        {{ cargando() ? 'Generando...' : 'Generar reporte' }}
+      </button>
+      <button mat-stroked-button [disabled]="!generado() || cargando()" (click)="exportarCSV()">
+        <mat-icon>file_download</mat-icon> CSV
+      </button>
+      <button mat-stroked-button [disabled]="!generado() || cargando()" (click)="imprimir()">
+        <mat-icon>print</mat-icon> PDF
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="error()" class="error-box">
+    <mat-icon color="warn">error_outline</mat-icon>
+    <p>{{ error() }}</p>
+    <button mat-raised-button color="primary" (click)="generar()">Reintentar</button>
+  </div>
+
+  <div *ngIf="cargando()" class="spinner-box">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Generando reporte...</p>
+  </div>
+
+  <div *ngIf="sinDatos()" class="aviso-box">
+    <mat-icon>search_off</mat-icon>
+    <p>No hay información disponible para los criterios seleccionados.</p>
+  </div>
+
+  <ng-container *ngIf="generado() && !cargando() && !sinDatos() && resumen()">
+    <!-- KPIs -->
+    <section class="kpi-grid">
+      <mat-card class="kpi-card">
+        <mat-card-content>
+          <mat-icon>payments</mat-icon>
+          <span class="kpi-label">Ventas del período</span>
+          <span class="kpi-value">{{ resumen()!.ventas_total | currency: 'Bs.' : 'symbol' : '1.2-2' }}</span>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="kpi-card">
+        <mat-card-content>
+          <mat-icon>receipt_long</mat-icon>
+          <span class="kpi-label">Pedidos</span>
+          <span class="kpi-value">{{ resumen()!.total_pedidos }}</span>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="kpi-card" [class.warn-card]="resumen()!.stock_critico > 0">
+        <mat-card-content>
+          <mat-icon>warning_amber</mat-icon>
+          <span class="kpi-label">Stock crítico</span>
+          <span class="kpi-value">{{ resumen()!.stock_critico }}</span>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="kpi-card">
+        <mat-card-content>
+          <mat-icon>calendar_month</mat-icon>
+          <span class="kpi-label">Reservas activas</span>
+          <span class="kpi-value">{{ resumen()!.reservas_activas }}</span>
+        </mat-card-content>
+      </mat-card>
+    </section>
+
+    <!-- Gráficos -->
+    <section class="charts-grid">
+      <mat-card class="chart-card">
+        <mat-card-header><mat-card-title>Ventas por sucursal</mat-card-title></mat-card-header>
+        <mat-card-content>
+          <app-fs-chart type="bar" [labels]="ventasSucursalChart().labels" [datasets]="ventasSucursalChart().datasets" tooltipPrefix="Bs. "></app-fs-chart>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="chart-card">
+        <mat-card-header><mat-card-title>Productos más vendidos</mat-card-title></mat-card-header>
+        <mat-card-content>
+          <app-fs-chart type="bar" [labels]="masVendidosChart().labels" [datasets]="masVendidosChart().datasets" tooltipPrefix="un. "></app-fs-chart>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="chart-card">
+        <mat-card-header><mat-card-title>Reservas por estado</mat-card-title></mat-card-header>
+        <mat-card-content>
+          <app-fs-chart type="pie" [labels]="reservasEstadoChart().labels" [datasets]="reservasEstadoChart().datasets" tooltipPrefix="un. "></app-fs-chart>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="chart-card">
+        <mat-card-header><mat-card-title>Rotación de inventario (top)</mat-card-title></mat-card-header>
+        <mat-card-content>
+          <app-fs-chart type="bar" [horizontal]="true" [labels]="rotacionChart().labels" [datasets]="rotacionChart().datasets" tooltipPrefix="x"></app-fs-chart>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="chart-card wide">
+        <mat-card-header><mat-card-title>Tendencias por temporada</mat-card-title></mat-card-header>
+        <mat-card-content>
+          <app-fs-chart type="bar" [labels]="tendenciasChart().labels" [datasets]="tendenciasChart().datasets" tooltipPrefix="Bs. "></app-fs-chart>
+        </mat-card-content>
+      </mat-card>
+    </section>
+
+    <!-- Tablas -->
+    <section class="tables-section" *ngIf="stockCritico().length > 0 || rotacion().length > 0">
+      <mat-card *ngIf="stockCritico().length > 0">
+        <mat-card-header>
+          <mat-card-title>Niveles de stock crítico</mat-card-title>
+          <mat-card-subtitle>Variantes con stock disponible menor o igual al mínimo</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content class="table-responsive">
+          <table class="data-tabla">
+            <thead>
+              <tr>
+                <th>Producto</th><th>Talla</th><th>Color</th><th>SKU</th><th>Sucursal</th><th>Mínimo</th><th>Disponible</th><th>Faltante</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let s of stockCritico()">
+                <td><strong>{{ s.producto }}</strong></td>
+                <td>{{ s.talla }}</td>
+                <td>{{ s.color }}</td>
+                <td><code>{{ s.sku }}</code></td>
+                <td>{{ s.sucursal }}</td>
+                <td>{{ s.stock_minimo }}</td>
+                <td [class.danger-cell]="s.disponible === 0"><strong>{{ s.disponible }}</strong></td>
+                <td>{{ s.faltante }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </mat-card-content>
+      </mat-card>
+    </section>
+  </ng-container>
+</div>

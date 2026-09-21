@@ -9,6 +9,7 @@ import 'carrito_screen.dart';
 import 'login_screen.dart';
 import 'mis_reservas_screen.dart';
 import 'producto_detalle_screen.dart';
+import 'reportes_screen.dart';
 
 class CatalogoScreen extends StatefulWidget {
   const CatalogoScreen({super.key});
@@ -22,6 +23,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
   List<Producto>? _productos;
   List<Producto>? _recomendados;
   String? _error;
+  bool _esPersonalDeGestion = false;
 
   @override
   void initState() {
@@ -29,6 +31,15 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     _iniciarCarrito();
     _cargar();
     _cargarRecomendados();
+    _cargarRol();
+  }
+
+  Future<void> _cargarRol() async {
+    final rol = await AuthService.currentRol();
+    if (!mounted) return;
+    setState(() {
+      _esPersonalDeGestion = rol == 'admin' || rol == 'encargado';
+    });
   }
 
   Future<void> _iniciarCarrito() async {
@@ -88,6 +99,13 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     if (mounted) setState(() {});
   }
 
+  Future<void> _abrirReportes() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ReportesScreen()),
+    );
+    if (mounted) setState(() {});
+  }
+
   Future<void> _abrirProducto(int idProducto) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
@@ -105,6 +123,12 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
       appBar: AppBar(
         title: const Text('Catálogo'),
         actions: [
+          if (_esPersonalDeGestion)
+            IconButton(
+              icon: const Icon(Icons.insights_outlined),
+              tooltip: 'Reportes y dashboards',
+              onPressed: _abrirReportes,
+            ),
           IconButton(
             icon: const Icon(Icons.receipt_long_outlined),
             tooltip: 'Mis reservas',

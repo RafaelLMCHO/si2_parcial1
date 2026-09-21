@@ -52,7 +52,12 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ['encargado'],
   },
   { ruta: '/ventas', label: 'Ventas / POS', icon: 'point_of_sale' },
-  { ruta: '/reportes', label: 'Reportes', icon: 'insights' },
+  {
+    ruta: '/reportes',
+    label: 'Reportes',
+    icon: 'insights',
+    roles: ['admin', 'encargado'],
+  },
 ];
 
 const ROL_LABELS: Record<string, string> = {

@@ -104,7 +104,108 @@ async function testCU17() {
   record('17', 'CU-23 bitácora registra CONSULTA_RECOMENDACIONES', hayRegistro, `status=${bit.status} registros=${Array.isArray(bit.json) ? bit.json.length : '-'}`);
 }
 
-const tests = [testCU17];
+/**
+ * CU16 - Generar reportes y dashboards (RF26 a RF33)
+ */
+async function testCU16() {
+  cuHeader('16', 'Generar reportes y dashboards');
+
+  const anonChecks = [
+    ['resumen', '/reportes/resumen'],
+    ['ventas-por-sucursal', '/reportes/ventas-por-sucursal'],
+    ['mas-vendidos', '/reportes/mas-vendidos'],
+    ['rotacion-inventario', '/reportes/rotacion-inventario'],
+    ['stock-critico', '/reportes/stock-critico'],
+    ['reservas', '/reportes/reservas'],
+    ['tendencias-temporada', '/reportes/tendencias-temporada'],
+  ];
+  for (const [nombre, path] of anonChecks) {
+    const anon = await req('GET', path);
+    record('16', `GET ${path} sin token -> 401`, anon.status === 401, `status=${anon.status}`);
+  }
+
+  // Roles no permitidos -> 403
+  const cajero = await login('cajero');
+  const cliente = await login('cliente');
+  const noPermitido = await req('GET', '/reportes/resumen', { token: cajero.token });
+  const noPermitidoCli = await req('GET', '/reportes/resumen', { token: cliente.token });
+  record('16', 'GET /reportes/resumen con rol cajero -> 403', noPermitido.status === 403, `status=${noPermitido.status}`);
+  record('16', 'GET /reportes/resumen con rol cliente -> 403', noPermitidoCli.status === 403, `status=${noPermitidoCli.status}`);
+
+  const admin = await login('admin');
+
+  const resumen = await req('GET', '/reportes/resumen', { token: admin.token });
+  const okResumen =
+    resumen.status === 200 &&
+    resumen.json !== null &&
+    typeof resumen.json.ventas_total === 'number' &&
+    typeof resumen.json.total_pedidos === 'number' &&
+    typeof resumen.json.stock_critico === 'number' &&
+    typeof resumen.json.reservas_activas === 'number' &&
+    Array.isArray(resumen.json.top_productos);
+  record('16', 'GET /reportes/resumen (admin) -> 200 con KPIs', okResumen, `status=${resumen.status} ventas=${resumen.json?.ventas_total} pedidos=${resumen.json?.total_pedidos}`);
+  if (okResumen) {
+    const top = resumen.json.top_productos[0];
+    const shapeTop = !top || (typeof top.producto === 'string' && typeof top.unidades === 'number');
+    record('16', 'resumen.top_productos con shape', shapeTop || resumen.json.top_productos.length === 0);
+  }
+
+  const ventas = await req('GET', '/reportes/ventas-por-sucursal', { token: admin.token });
+  const okVentas = ventas.status === 200 && Array.isArray(ventas.json) && ventas.json.every((r) => typeof r.sucursal === 'string' && typeof r.total === 'number');
+  record('16', 'GET /reportes/ventas-por-sucursal -> 200 list[sucursal,total]', okVentas, `status=${ventas.status} rows=${Array.isArray(ventas.json) ? ventas.json.length : '-'}`);
+
+  const mas = await req('GET', '/reportes/mas-vendidos?limit=10', { token: admin.token });
+  const okMas = mas.status === 200 && Array.isArray(mas.json) && mas.json.every((r) => typeof r.producto === 'string' && typeof r.unidades === 'number' && typeof r.monto === 'number');
+  record('16', 'GET /reportes/mas-vendidos -> 200 list[producto,unidades,monto]', okMas, `status=${mas.status} items=${Array.isArray(mas.json) ? mas.json.length : '-'}`);
+
+  const rot = await req('GET', '/reportes/rotacion-inventario?limit=10', { token: admin.token });
+  const oksRot = rot.status === 200 && Array.isArray(rot.json) && rot.json.every((r) => typeof r.producto === 'string' && typeof r.unidades_vendidas === 'number' && typeof r.rotacion === 'number');
+  record('16', 'GET /reportes/rotacion-inventario -> 200 list[producto,rotacion]', oksRot, `status=${rot.status} items=${Array.isArray(rot.json) ? rot.json.length : '-'}`);
+
+  const critico = await req('GET', '/reportes/stock-critico', { token: admin.token });
+  const okCritico =
+    critico.status === 200 &&
+    Array.isArray(critico.json) &&
+    critico.json.every((r) => typeof r.producto === 'string' && typeof r.stock_minimo === 'number' && typeof r.disponible === 'number' && r.disponible <= r.stock_minimo);
+  record('16', 'GET /reportes/stock-critico -> 200 con disponible <= stock_minimo', okCritico, `status=${critico.status} rows=${Array.isArray(critico.json) ? critico.json.length : '-'}`);
+
+  const reservas = await req('GET', '/reportes/reservas', { token: admin.token });
+  const okReservas =
+    reservas.status === 200 &&
+    reservas.json !== null &&
+    Array.isArray(reservas.json.por_estado) &&
+    Array.isArray(reservas.json.por_sucursal);
+  record('16', 'GET /reportes/reservas -> 200 {por_estado, por_sucursal}', okReservas, `status=${reservas.status}`);
+
+  const tendencias = await req('GET', '/reportes/tendencias-temporada', { token: admin.token });
+  const okTendencias = tendencias.status === 200 && Array.isArray(tendencias.json) && tendencias.json.every((r) => typeof r.temporada === 'string' && typeof r.monto === 'number');
+  record('16', 'GET /reportes/tendencias-temporada -> 200 list[temporada,monto]', okTendencias, `status=${tendencias.status} items=${Array.isArray(tendencias.json) ? tendencias.json.length : '-'}`);
+
+  // Filtros combinados
+  const filtrado = await req(
+    'GET',
+    '/reportes/ventas-por-sucursal?sucursal_id=1&categoria_id=1&temporada_id=1&fecha_desde=2024-01-01&fecha_hasta=2026-12-31',
+    { token: admin.token },
+  );
+  record('16', 'GET /reportes/ventas-por-sucursal con filtros -> 200', filtrado.status === 200 && Array.isArray(filtrado.json), `status=${filtrado.status}`);
+
+  // Encargado: acceso permitido pero restringido a SU sucursal
+  const encargado = await login('encargado');
+  const encResumen = await req('GET', '/reportes/resumen', { token: encargado.token });
+  const encVentas = await req('GET', '/reportes/ventas-por-sucursal', { token: encargado.token });
+  const soloSuSucursal =
+    encVentas.status === 200 &&
+    Array.isArray(encVentas.json) &&
+    encVentas.json.length === 1 &&
+    encVentas.json[0].sucursal_id === 1;
+  record('16', 'GET /reportes/ventas-por-sucursal (encargado) -> solo sucursal asignada', encResumen.status === 200 && soloSuSucursal, `status=${encVentas.status} rows=${Array.isArray(encVentas.json) ? encVentas.json.length : '-'}`);
+
+  // CU-23: bitácora registra GENERA_REPORTE
+  const bit = await req('GET', '/bitacora?accion=GENERA_REPORTE&limite=5', { token: admin.token });
+  record('16', 'CU-23 bitácora registra GENERA_REPORTE', bit.status === 200 && Array.isArray(bit.json) && bit.json.length > 0, `status=${bit.status} registros=${Array.isArray(bit.json) ? bit.json.length : '-'}`);
+}
+
+const tests = [testCU17, testCU16];
 
 async function main() {
   try {

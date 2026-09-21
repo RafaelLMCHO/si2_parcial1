@@ -12,7 +12,14 @@ import { UsuariosAdminComponent } from './usuarios-admin/usuarios-admin';
 import { CarritoComponent } from './carrito/carrito';
 import { MisReservasComponent } from './reservas/mis-reservas';
 import { PrepararReservasComponent } from './encargado/reservas/preparar-reservas/preparar-reservas';
-import { adminGuard, authGuard, encargadoGuard, reservasRoleGuard } from './core/auth.guard';
+import { ReportesComponent } from './reportes/reportes';
+import {
+  adminGuard,
+  authGuard,
+  encargadoGuard,
+  reportesGuard,
+  reservasRoleGuard,
+} from './core/auth.guard';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
@@ -80,13 +87,8 @@ export const routes: Routes = [
   },
   {
     path: 'reportes',
-    component: ProntoComponent,
-    data: {
-      titulo: 'Reportes',
-      icon: 'insights',
-      desc: 'Reportes de ventas, inventario y rendimiento por sucursal.',
-    },
-    canActivate: [authGuard],
+    component: ReportesComponent,
+    canActivate: [authGuard, reportesGuard],
   },
   { path: '**', redirectTo: 'dashboard' },
 ];

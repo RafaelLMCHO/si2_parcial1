@@ -28,6 +28,16 @@ export const encargadoGuard: CanActivateFn = () => {
     : router.createUrlTree(['/dashboard']);
 };
 
+/** Reportes/dashboards (CU-16): solo administradores y encargados. */
+export const reportesGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  const rol = auth.usuario()?.rol;
+  return rol === 'admin' || rol === 'encargado'
+    ? true
+    : router.createUrlTree(['/dashboard']);
+};
+
 /**
  * En la ruta /reservas, redirige al encargado a su panel propio.
  * Clientes y admins acceden normalmente.

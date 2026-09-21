@@ -8,6 +8,7 @@ from app.api.v1.endpoints import (
     inventario,
     reservas,
     ventas,
+    reportes,
     ia,
 )
 
@@ -20,3 +21,4 @@ api_router.include_router(inventario.router, prefix="/inventario", tags=["Invent
 api_router.include_router(reservas.router, prefix="/reservas", tags=["Reservas"])
 api_router.include_router(ventas.router, prefix="/ventas", tags=["Ventas y Pagos"])
 api_router.include_router(ia.router, prefix="/ia", tags=["Inteligencia Artificial"])
+api_router.include_router(reportes.router, prefix="/reportes", tags=["Reportes"])

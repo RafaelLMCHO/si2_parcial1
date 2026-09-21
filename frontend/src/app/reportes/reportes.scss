@@ -1,0 +1,178 @@
+.page-container {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header-section {
+  margin-bottom: 20px;
+}
+
+.filters-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.btn-group {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.kpi-card mat-card-content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.kpi-card mat-icon {
+  font-size: 32px;
+  width: 32px;
+  height: 32px;
+  color: #4f46e5;
+}
+
+.kpi-card.warn-card mat-icon {
+  color: #ea580c;
+}
+
+.kpi-label {
+  font-size: 13px;
+  color: #64748b;
+  flex-basis: 100%;
+  margin-top: -6px;
+}
+
+.kpi-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.chart-card.wide {
+  grid-column: 1 / -1;
+}
+
+.chart-card mat-card-content {
+  min-height: 280px;
+}
+
+.tables-section {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.table-responsive {
+  overflow-x: auto;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.data-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.data-tabla th,
+.data-tabla td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.data-tabla th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+}
+
+.danger-cell {
+  color: #dc2626;
+}
+
+.spinner-box,
+.aviso-box,
+.error-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 24px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.spinner-box {
+  justify-content: center;
+  color: #475569;
+}
+
+.aviso-box mat-icon {
+  color: #64748b;
+}
+
+.aviso-box p {
+  color: #475569;
+}
+
+.error-box {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+.error-box p {
+  flex: 1;
+}
+
+@media (max-width: 900px) {
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+  .btn-group {
+    margin-left: 0;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+}
+
+@media print {
+  app-navbar,
+  .no-print,
+  .kpi-grid,
+  .charts-grid {
+    display: none !important;
+  }
+  .page-container {
+    padding: 0;
+  }
+  .tables-section {
+    display: block;
+  }
+}

@@ -81,4 +81,100 @@ Clases de apoyo: backend/app/core/ (dependencies)
 
 ================================================================================
 FIN DEL PROMPT
+===============================================================================
+
 ================================================================================
+PROMPT PARA GENERAR DIAGRAMAS DE COMUNICACION UML
+CICLO #3 - FASHIONSTORE (SOLO BACKEND)
+CU-16 GENERAR REPORTES Y DASHBOARDS
+================================================================================
+
+Genera el diagrama de comuniacion UML del CU-16 del proyecto FashionStore
+(plataforma de comercio electronico de ropa, backend FastAPI + SQLAlchemy).
+El diagrama debe contener UNICAMENTE tres clases con sus estereotipos UML y sus
+metodos:
+
+  - Clase INTERFAZ    «boundary» / «interface»  -> Schemas Pydantic
+  - Clase CONTROL     «control»                 -> Endpoints FastAPI
+  - Clase ENTIDAD     «entity»                  -> Modelos ORM SQLAlchemy
+
+NO tomar en cuenta el frontend. Basarse unicamente en el codigo del backend.
+
+-------------------------------------------------------------------------------
+1) UBICACION DE LAS CLASES EN EL BACKEND (CARPETAS)
+-------------------------------------------------------------------------------
+- Clase INTERFAZ:  backend/app/schemas/reportes.py (ResumenReporteOut,
+                   VentaSucursalRow, MasVendidoRow, RotacionRow,
+                   StockCriticoRow, ReservaEstadoRow, ReservaSucursalRow,
+                   ReservasReporteOut, TendenciaRow)
+- Clase CONTROL:   backend/app/api/v1/endpoints/reportes.py
+                   backend/app/api/v1/endpoints/bitacora.py (registrar)
+  Clases de apoyo del control:
+                   backend/app/core/dependencies.py (get_current_user,
+                   get_admin_or_encargado)
+- Clase ENTIDAD:   backend/app/models/inventario.py (Inventario, Sucursal)
+                   backend/app/models/ventas.py (Pedido, PedidoItem, Venta,
+                   Reserva)
+                   backend/app/models/catalogo.py (Producto, ProductoVariante,
+                   Categoria, Temporada)
+                   backend/app/models/usuario.py (Usuario)
+                   backend/app/models/bitacora.py (Bitacora)
+
+-------------------------------------------------------------------------------
+2) NOTACION REQUERIDA POR EL DIAGRAMA
+-------------------------------------------------------------------------------
+- Un rectangulo por objeto con el nombre de la clase y el estereotipo.
+- Un actor: Administrador/Encargado (autenticado).
+- Mensajes numerados en orden temporal: 1, 1.1, 2, 3, ...
+- Formato de mensaje: N: nombreMetodo(parametros)
+- Indicar en el rectangulo o como nota la ruta de la carpeta donde vive la clase.
+- Incluir el flujo de retorno (respuesta) hacia el actor.
+
+-------------------------------------------------------------------------------
+3) CASO DE USO CON SUS CLASES Y METODOS
+-------------------------------------------------------------------------------
+
+CU16 - GENERAR REPORTES Y DASHBOARDS
+(Actor: Administrador o Encargado autenticado)
+  INTERFAZ (backend/app/schemas/reportes.py): ResumenReporteOut,
+             VentaSucursalRow, MasVendidoRow, RotacionRow, StockCriticoRow,
+             ReservasReporteOut, TendenciaRow
+  CONTROL  (backend/app/api/v1/endpoints/reportes.py): resumen(),
+             ventas_por_sucursal(), mas_vendidos(), rotacion_inventario(),
+             stock_critico(), reservas(), tendencias()
+           (backend/app/api/v1/endpoints/bitacora.py): registrar()
+           (backend/app/core/dependencies.py): get_admin_or_encargado
+  ENTIDAD  (backend/app/models/inventario.py): Inventario, Sucursal
+           (backend/app/models/ventas.py): Pedido, PedidoItem, Venta, Reserva
+           (backend/app/models/catalogo.py): Producto, ProductoVariante,
+             Categoria, Temporada
+           (backend/app/models/usuario.py): Usuario
+           (backend/app/models/bitacora.py): Bitacora
+  FLUJO:
+    1: Actor -> Interfaz: GET /reportes/resumen (Bearer token)
+    2: Interfaz -> Control: resumen(fecha_desde, fecha_hasta, sucursal_id,
+                             categoria_id, temporada_id, current)
+    3: Control -> Entidad: verificar rol y sucursal del usuario (Usuario,
+                             get_admin_or_encargado)
+    4: Control -> Entidad: consultar ventas/ingresos del período
+                             (Venta x Pedido x PedidoItem)
+    5: Control -> Entidad: consultar stock crítico (Inventario,
+                             disponible <= stock_minimo)
+    6: Control -> Entidad: consultar reservas activas (Reserva)
+    7: Entidad -> Control: KPIs calculados
+    8: Control -> Entidad: registrar bitacora GENERA_REPORTE (CU-23, Bitacora)
+    9: Control -> Interfaz: ResumenReporteOut
+    10: Interfaz -> Actor: KPI cards y gráficos (ventas por sucursal,
+                             más vendidos, rotación, reservas, tendencias)
+
+-------------------------------------------------------------------------------
+4) RESUMEN DE CARPETAS (para rotular cada clase en el diagrama)
+-------------------------------------------------------------------------------
+- Clase INTERFAZ  -> backend/app/schemas/
+- Clase CONTROL   -> backend/app/api/v1/endpoints/
+- Clase ENTIDAD   -> backend/app/models/
+Clases de apoyo: backend/app/core/ (dependencies)
+
+================================================================================
+FIN DEL PROMPT
+=================================================================================

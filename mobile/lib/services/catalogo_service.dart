@@ -13,4 +13,14 @@ class CatalogoService {
     final data = await ApiClient.get('/catalogo/productos/$id');
     return Producto.fromJson(data as Map<String, dynamic>);
   }
+
+  static Future<List<Map<String, dynamic>>> listarCategorias() async {
+    final data = await ApiClient.get('/catalogo/categorias');
+    return (data as List).map((e) => e as Map<String, dynamic>).toList();
+  }
+
+  static Future<List<Map<String, dynamic>>> listarTemporadas() async {
+    final data = await ApiClient.get('/catalogo/temporadas');
+    return (data as List).map((e) => e as Map<String, dynamic>).toList();
+  }
 }
