@@ -76,8 +76,18 @@ export class CatalogoAdminComponent implements OnInit {
   modoFormulario = signal<'nuevo' | 'editar' | null>(null);
   variantesPendientes = signal<VariantePendiente[]>([]);
   confirmandoBaja = signal<number | null>(null);
+  subiendoImagen = signal(false);
+  archivoImagen = signal<File | null>(null);
+  imagenLocalUrl = signal<string | null>(null);
 
   readonly columnas = ['nombre', 'precio', 'categoria', 'estado', 'acciones'];
+
+  previaImagen = computed(() => {
+    const local = this.imagenLocalUrl();
+    if (local) return local;
+    const edit = this.editando();
+    return edit?.imagen_url || this.form.value.imagen_url || 'assets/placeholder.svg';
+  });
 
   form = this.fb.group({
     nombre: ['', [Validators.required, Validators.minLength(2)]],
@@ -119,6 +129,8 @@ export class CatalogoAdminComponent implements OnInit {
     this.editando.set(null);
     this.modoFormulario.set('nuevo');
     this.variantesPendientes.set([]);
+    this.archivoImagen.set(null);
+    this.imagenLocalUrl.set(null);
     this.form.reset();
     this.varianteForm.reset();
   }
@@ -129,6 +141,8 @@ export class CatalogoAdminComponent implements OnInit {
     this.editando.set(p);
     this.modoFormulario.set('editar');
     this.variantesPendientes.set([]);
+    this.archivoImagen.set(null);
+    this.imagenLocalUrl.set(null);
     this.form.patchValue({
       nombre: p.nombre,
       descripcion: p.descripcion ?? '',
@@ -152,6 +166,56 @@ export class CatalogoAdminComponent implements OnInit {
     this.variantesPendientes.set([]);
     this.error.set(null);
     this.confirmandoBaja.set(null);
+    this.archivoImagen.set(null);
+    this.imagenLocalUrl.set(null);
+  }
+
+  onArchivoSeleccionado(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const archivo = input.files?.[0] ?? null;
+    input.value = '';
+    if (!archivo) return;
+
+    const permitidos = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!permitidos.includes(archivo.type)) {
+      this.snackbar.open('Formato no permitido. Usa JPG, PNG o WebP.', 'Cerrar', { duration: 5000 });
+      return;
+    }
+    if (archivo.size > 10 * 1024 * 1024) {
+      this.snackbar.open('La imagen supera el límite de 10 MB.', 'Cerrar', { duration: 5000 });
+      return;
+    }
+
+    this.archivoImagen.set(archivo);
+    const lector = new FileReader();
+    lector.onloadend = () => this.imagenLocalUrl.set(lector.result as string);
+    lector.readAsDataURL(archivo);
+  }
+
+  subirImagen(): void {
+    const editando = this.editando();
+    const archivo = this.archivoImagen();
+    if (!editando || !archivo || this.subiendoImagen()) return;
+
+    this.subiendoImagen.set(true);
+    this.servicio.subirImagen(editando.id_producto, archivo).subscribe({
+      next: (p) => {
+        this.subiendoImagen.set(false);
+        this.form.patchValue({ imagen_url: p.imagen_url ?? '' });
+        this.archivoImagen.set(null);
+        this.imagenLocalUrl.set(null);
+        this.snackbar.open('Imagen del producto actualizada correctamente', 'Cerrar', { duration: 4000 });
+      },
+      error: (err) => {
+        this.subiendoImagen.set(false);
+        const detail = err?.error?.detail?.toString() ?? 'Error al subir la imagen';
+        this.snackbar.open(detail, 'Cerrar', { duration: 5000 });
+      },
+    });
+  }
+
+  previoError(event: Event): void {
+    ((event.target as HTMLImageElement)).src = 'assets/placeholder.svg';
   }
 
   onGuardar(): void {

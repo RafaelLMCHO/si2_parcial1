@@ -75,6 +75,20 @@
           </mat-form-field>
         </div>
 
+        <div class="cap-upload" *ngIf="editando()">
+          <img class="cap-preview" [src]="previaImagen()" (error)="previoError($event)" alt="Imagen del producto" />
+          <div class="cap-upload-actions">
+            <input #fileInput type="file" accept="image/jpeg,image/png,image/webp" class="cap-file-input" (change)="onArchivoSeleccionado($event)" />
+            <button type="button" mat-stroked-button (click)="fileInput.click()" [disabled]="subiendoImagen()">
+              <mat-icon>add_photo_alternate</mat-icon> Elegir imagen
+            </button>
+            <button type="button" mat-flat-button color="primary" (click)="subirImagen()" [disabled]="!archivoImagen() || subiendoImagen()">
+              <mat-icon>upload</mat-icon> {{ subiendoImagen() ? 'Subiendo…' : 'Subir imagen' }}
+            </button>
+          </div>
+          <p class="cap-upload-hint">JPG, PNG o WebP · máx. 10 MB · {{ archivoImagen() ? archivoImagen()!.name : 'Sin archivo elegido' }}</p>
+        </div>
+
         <div class="cap-form-row">
           <mat-form-field appearance="outline">
             <mat-label>URL de imagen</mat-label>

@@ -24,6 +24,8 @@ services:
     build: ./backend
     container_name: fashionstore-backend
     restart: unless-stopped
+    volumes:
+      - backend_uploads:/app/static/uploads
     environment:
       DATABASE_URL: postgresql+psycopg2://postgres:09091991@db:5432/fashionstore
       SECRET_KEY: fashionstore-secret-key-cambiar-en-produccion
@@ -48,3 +50,4 @@ services:
 
 volumes:
   pgdata:
+  backend_uploads:

@@ -97,6 +97,12 @@ export class CatalogoService {
     });
   }
 
+  subirImagen(id: number, archivo: File): Observable<Producto> {
+    const form = new FormData();
+    form.append('archivo', archivo, archivo.name);
+    return this.http.post<Producto>(`${this.api}/productos/${id}/imagen`, form);
+  }
+
   crearVariante(data: VarianteForm): Observable<ProductoVariante> {
     return this.http.post<ProductoVariante>(`${this.api}/productos/variantes`, data);
   }

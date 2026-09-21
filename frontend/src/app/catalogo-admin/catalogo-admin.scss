@@ -97,3 +97,41 @@
   justify-content: flex-end;
   padding: 0 16px 12px;
 }
+
+.cap-upload {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 4px;
+  padding: 12px;
+  border: 1px dashed rgba(0, 0, 0, 0.23);
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
+
+.cap-preview {
+  width: 96px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #f5f5f5;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.cap-upload-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.cap-file-input {
+  display: none;
+}
+
+.cap-upload-hint {
+  width: 100%;
+  margin: 0;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.55);
+}

@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pathlib import Path
+
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.exc import IntegrityError, InternalError
 from sqlalchemy.orm import Session, joinedload
 
@@ -34,6 +36,29 @@ from app.schemas.comercio import (
 )
 
 router = APIRouter()
+
+
+_UPLOADS_DIR = Path(__file__).resolve().parents[4] / "static" / "uploads"
+_MAX_IMAGEN_BYTES = 10 * 1024 * 1024
+_EXT_POR_TIPO = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+}
+
+
+def _verificar_magic(contenido: bytes, content_type: str) -> bool:
+    if content_type == "image/jpeg":
+        return contenido[:3] == b"\xff\xd8\xff"
+    if content_type == "image/png":
+        return contenido[:8] == b"\x89PNG\r\n\x1a\n"
+    if content_type == "image/webp":
+        return (
+            len(contenido) >= 12
+            and contenido[:4] == b"RIFF"
+            and contenido[8:12] == b"WEBP"
+        )
+    return False
 
 
 def _maestro_o_404(db: Session, modelo, id_valor: int, nombre: str):
@@ -264,6 +289,55 @@ def update_producto(
 
     for field, value in cambios.items():
         setattr(producto, field, value)
+    db.commit()
+    return _producto_cargado(db, producto.id_producto)
+
+
+@router.post(
+    "/productos/{producto_id}/imagen",
+    response_model=ProductoOut,
+    summary="Subir imagen real del producto (admin)",
+)
+def subir_imagen_producto(
+    producto_id: int,
+    archivo: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(admin_required),
+):
+    producto = _producto_cargado(db, producto_id)
+
+    content_type = (archivo.content_type or "").lower()
+    if content_type not in _EXT_POR_TIPO:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Formato no permitido. Usa JPG, PNG o WebP.",
+        )
+
+    contenido = bytearray()
+    while True:
+        chunk = archivo.file.read(1 << 16)
+        if not chunk:
+            break
+        contenido.extend(chunk)
+        if len(contenido) > _MAX_IMAGEN_BYTES:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=f"La imagen supera el límite de {_MAX_IMAGEN_BYTES // (1024 * 1024)} MB.",
+            )
+
+    if not _verificar_magic(bytes(contenido), content_type):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El archivo no es una imagen válida.",
+        )
+
+    _UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+    for previo in _UPLOADS_DIR.glob(f"producto_{producto_id}.*"):
+        previo.unlink(missing_ok=True)
+    destino = _UPLOADS_DIR / f"producto_{producto_id}{_EXT_POR_TIPO[content_type]}"
+    destino.write_bytes(bytes(contenido))
+
+    producto.imagen_url = f"/static/uploads/{destino.name}"
     db.commit()
     return _producto_cargado(db, producto.id_producto)
 
