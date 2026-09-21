@@ -166,6 +166,17 @@ export class UsuariosAdminComponent implements OnInit {
     });
   }
 
+  reactivar(usuario: Usuario): void {
+    this.error.set(null);
+    this.servicio.actualizar(usuario.id_usuario, { activo: true }).subscribe({
+      next: () => {
+        this.snackbar.open('Usuario activado correctamente', 'Cerrar', { duration: 4000 });
+        this.recargar();
+      },
+      error: (err) => this.error.set(this.mensajeError(err)),
+    });
+  }
+
   nombreSucursal(id: number | null | undefined): string {
     return this.sucursalServicio.nombreDe(id);
   }
