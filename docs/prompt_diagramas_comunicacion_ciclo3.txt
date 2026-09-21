@@ -1,0 +1,84 @@
+================================================================================
+PROMPT PARA GENERAR DIAGRAMAS DE COMUNICACION UML
+CICLO #3 - FASHIONSTORE (SOLO BACKEND)
+CU-17 RECIBIR RECOMENDACIONES DE IA
+================================================================================
+
+Genera el diagrama de comuniacion UML del CU-17 del proyecto FashionStore
+(plataforma de comercio electronico de ropa, backend FastAPI + SQLAlchemy).
+El diagrama debe contener UNICAMENTE tres clases con sus estereotipos UML y sus
+metodos:
+
+  - Clase INTERFAZ    «boundary» / «interface»  -> Schemas Pydantic
+  - Clase CONTROL     «control»                 -> Endpoints FastAPI
+  - Clase ENTIDAD     «entity»                  -> Modelos ORM SQLAlchemy
+
+NO tomar en cuenta el frontend. Basarse unicamente en el codigo del backend.
+
+--------------------------------------------------------------------------------
+1) UBICACION DE LAS CLASES EN EL BACKEND (CARPETAS)
+--------------------------------------------------------------------------------
+- Clase INTERFAZ:  backend/app/schemas/comercio.py (ProductoOut,
+                   ProductoVarianteOut, CategoriaOut, TemporadaOut,
+                   ProveedorOut, ColeccionOut, ColorOut, TallaOut)
+- Clase CONTROL:   backend/app/api/v1/endpoints/ia.py
+                   backend/app/api/v1/endpoints/bitacora.py (registrar)
+  Clases de apoyo del control:
+                   backend/app/core/dependencies.py (get_current_user)
+- Clase ENTIDAD:   backend/app/models/catalogo.py (Producto, ProductoVariante,
+                   Temporada, Categoria, Color, Talla, Coleccion, Proveedor)
+                   backend/app/models/ventas.py (Pedido, PedidoItem)
+                   backend/app/models/inventario.py (Inventario)
+                   backend/app/models/usuario.py (Usuario)
+                   backend/app/models/bitacora.py (Bitacora)
+
+--------------------------------------------------------------------------------
+2) NOTACION REQUERIDA POR EL DIAGRAMA
+--------------------------------------------------------------------------------
+- Un rectangulo por objeto con el nombre de la clase y el estereotipo.
+- Un actor: Cliente (autenticado).
+- Mensajes numerados en orden temporal: 1, 1.1, 2, 3, ...
+- Formato de mensaje: N: nombreMetodo(parametros)
+- Indicar en el rectangulo o como nota la ruta de la carpeta donde vive la clase.
+- Incluir el flujo de retorno (respuesta) hacia el actor.
+
+--------------------------------------------------------------------------------
+3) CASO DE USO CON SUS CLASES Y METODOS
+--------------------------------------------------------------------------------
+
+CU17 - RECIBIR RECOMENDACIONES DE IA (Actor: Cliente autenticado)
+  INTERFAZ (backend/app/schemas/comercio.py): ProductoOut, ProductoVarianteOut
+  CONTROL  (backend/app/api/v1/endpoints/ia.py): recomendar()
+           (backend/app/api/v1/endpoints/bitacora.py): registrar()
+           (backend/app/core/dependencies.py): get_current_user
+  ENTIDAD  (backend/app/models/catalogo.py): Producto, ProductoVariante, Temporada
+           (backend/app/models/ventas.py): Pedido, PedidoItem
+           (backend/app/models/inventario.py): Inventario
+           (backend/app/models/usuario.py): Usuario
+           (backend/app/models/bitacora.py): Bitacora
+  FLUJO:
+    1: Cliente -> Interfaz: GET /ia/recomendaciones (Bearer token)
+    2: Interfaz -> Control: recomendar(limit, current)
+    3: Control -> Entidad: consultar temporada vigente (Temporada)
+    4: Control -> Entidad: consultar historial del cliente
+                            (Pedido x PedidoItem x ProductoVariante x Producto)
+    5: Control -> Entidad: consultar ids con stock en sucursal del cliente
+                            (Inventario, cantidad_disponible > 0)
+    6: Control -> Entidad: filtrar Producto (activo, temporada, stock,
+                            talla/color preferidos, prioridad de categoria)
+    7: Entidad -> Control: productos recomendados
+    8: Control -> Entidad: registrar bitacora (CU-23, Bitacora)
+    9: Control -> Interfaz: list[ProductoOut]
+    10: Interfaz -> Cliente: carrusel de recomendaciones
+
+--------------------------------------------------------------------------------
+4) RESUMEN DE CARPETAS (para rotular cada clase en el diagrama)
+--------------------------------------------------------------------------------
+- Clase INTERFAZ  -> backend/app/schemas/
+- Clase CONTROL   -> backend/app/api/v1/endpoints/
+- Clase ENTIDAD   -> backend/app/models/
+Clases de apoyo: backend/app/core/ (dependencies)
+
+================================================================================
+FIN DEL PROMPT
+================================================================================

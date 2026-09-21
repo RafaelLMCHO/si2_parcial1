@@ -4,6 +4,7 @@ import '../models/producto.dart';
 import '../services/auth_service.dart';
 import '../services/carrito_service.dart';
 import '../services/catalogo_service.dart';
+import '../services/ia_service.dart';
 import 'carrito_screen.dart';
 import 'login_screen.dart';
 import 'mis_reservas_screen.dart';
@@ -19,6 +20,7 @@ class CatalogoScreen extends StatefulWidget {
 class _CatalogoScreenState extends State<CatalogoScreen> {
   final _carrito = CarritoService.instance;
   List<Producto>? _productos;
+  List<Producto>? _recomendados;
   String? _error;
 
   @override
@@ -26,6 +28,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     super.initState();
     _iniciarCarrito();
     _cargar();
+    _cargarRecomendados();
   }
 
   Future<void> _iniciarCarrito() async {
@@ -46,6 +49,20 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
       if (!mounted) return;
       setState(() => _error = e.toString());
     }
+  }
+
+  Future<void> _cargarRecomendados() async {
+    try {
+      final lista = await IaService.recomendar(limit: 6);
+      if (!mounted) return;
+      setState(() => _recomendados = lista);
+    } catch (_) {
+      // La sección de recomendados es opcional: no bloquea el catálogo.
+    }
+  }
+
+  Future<void> _refrescar() async {
+    await Future.wait([_cargar(), _cargarRecomendados()]);
   }
 
   Future<void> _salir() async {
@@ -136,22 +153,95 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                       child: Text('No hay productos disponibles en este momento.'),
                     )
                   : RefreshIndicator(
-                      onRefresh: _cargar,
-                      child: GridView.builder(
-                        padding: const EdgeInsets.all(16),
-                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 420,
-                          childAspectRatio: 0.72,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                        ),
-                        itemCount: productos.length,
-                        itemBuilder: (context, i) => _ProductoCard(
-                          producto: productos[i],
-                          onTap: () => _abrirProducto(productos[i].idProducto),
-                        ),
+                      onRefresh: _refrescar,
+                      child: CustomScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        slivers: [
+                          if (_recomendados != null && _recomendados!.isNotEmpty)
+                            SliverToBoxAdapter(
+                              child: _SeccionRecomendados(
+                                productos: _recomendados!,
+                                onTap: _abrirProducto,
+                              ),
+                            ),
+                          SliverPadding(
+                            padding: const EdgeInsets.all(16),
+                            sliver: SliverGrid(
+                              gridDelegate:
+                                  const SliverGridDelegateWithMaxCrossAxisExtent(
+                                maxCrossAxisExtent: 420,
+                                childAspectRatio: 0.72,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                              ),
+                              delegate: SliverChildBuilderDelegate(
+                                (context, i) => _ProductoCard(
+                                  producto: productos[i],
+                                  onTap: () =>
+                                      _abrirProducto(productos[i].idProducto),
+                                ),
+                                childCount: productos.length,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+    );
+  }
+}
+
+class _SeccionRecomendados extends StatelessWidget {
+  const _SeccionRecomendados({required this.productos, required this.onTap});
+
+  final List<Producto> productos;
+  final void Function(int idProducto) onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.auto_awesome,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Recomendados para ti',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 220,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: productos.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 12),
+              itemBuilder: (context, i) {
+                final p = productos[i];
+                return SizedBox(
+                  width: 160,
+                  child: _ProductoCard(
+                    producto: p,
+                    onTap: () => onTap(p.idProducto),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

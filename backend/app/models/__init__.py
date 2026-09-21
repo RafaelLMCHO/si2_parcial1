@@ -28,6 +28,7 @@ from app.models.ventas import (
     PedidoItem,
     Pago,
 )
+from app.models.bitacora import Bitacora
 
 __all__ = [
     "Base",

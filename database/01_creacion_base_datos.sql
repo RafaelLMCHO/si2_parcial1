@@ -732,3 +732,22 @@ EXCEPTION
         RAISE;
 END;
 $$;
+
+-- ============================================================
+-- 21. BITÁCORA (CU-23, transversal)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS bitacoras (
+    id_bitacora  SERIAL PRIMARY KEY,
+    usuario_id   INTEGER REFERENCES usuarios(id_usuario) ON DELETE SET NULL,
+    accion       VARCHAR(80)  NOT NULL,
+    entidad      VARCHAR(60),
+    entidad_id   INTEGER,
+    detalle      TEXT,
+    ip_origen    VARCHAR(45),
+    fecha        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS ix_bitacoras_usuario_id ON bitacoras (usuario_id);
+CREATE INDEX IF NOT EXISTS ix_bitacoras_accion ON bitacoras (accion);
+CREATE INDEX IF NOT EXISTS ix_bitacoras_fecha ON bitacoras (fecha);

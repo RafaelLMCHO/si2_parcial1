@@ -37,6 +37,42 @@
 
   <mat-error *ngIf="error()" class="cat-error">{{ error() }}</mat-error>
 
+  <section
+    class="recomendados"
+    *ngIf="!cargando() && (recomendados().length > 0 || cargandoRecomendados())"
+  >
+    <h2 class="recomendados-title">
+      <mat-icon>auto_awesome</mat-icon>
+      Recomendados para ti
+    </h2>
+    <div class="recomendados-row" *ngIf="recomendados().length > 0; else recSpinner">
+      <mat-card
+        class="product-card product-card-row"
+        *ngFor="let p of recomendados()"
+        (click)="verProducto(p.id_producto)"
+      >
+        <img
+          mat-card-image
+          class="product-img"
+          [src]="p.imagen_url || 'assets/placeholder.svg'"
+          loading="lazy"
+          decoding="async"
+          (error)="onImagenError($event)"
+          alt="{{ p.nombre }}"
+        />
+        <mat-card-header>
+          <mat-card-title>{{ p.nombre }}</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <p class="price">{{ p.precio | currency: 'Bs.' : 'symbol' : '1.2-2' }}</p>
+        </mat-card-content>
+      </mat-card>
+    </div>
+    <ng-template #recSpinner>
+      <div class="center-block"><mat-spinner diameter="24"></mat-spinner></div>
+    </ng-template>
+  </section>
+
   <div class="content-grid" *ngIf="!cargando() && productos().length > 0">
     <mat-card
       class="product-card"

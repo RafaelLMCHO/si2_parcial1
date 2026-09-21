@@ -10,6 +10,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { CurrencyPipe, CommonModule } from '@angular/common';
 import { CatalogoService } from '../services/catalogo.service';
+import { IaService } from '../services/ia.service';
 import { Categoria, Producto } from '../models/catalogo';
 import { NavbarComponent } from '../shared/navbar';
 
@@ -34,10 +35,13 @@ import { NavbarComponent } from '../shared/navbar';
 })
 export class CatalogoComponent implements OnInit {
   private catalogo = inject(CatalogoService);
+  private ia = inject(IaService);
   private router = inject(Router);
 
   readonly categorias = signal<Categoria[]>([]);
   readonly productos = signal<Producto[]>([]);
+  readonly recomendados = signal<Producto[]>([]);
+  readonly cargandoRecomendados = signal(false);
   readonly cargando = signal(true);
   readonly error = signal<string | null>(null);
 
@@ -46,6 +50,7 @@ export class CatalogoComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarCategorias();
+    this.cargarRecomendados();
     this.cargarProductos();
   }
 
@@ -54,6 +59,20 @@ export class CatalogoComponent implements OnInit {
       next: (c) => this.categorias.set(c),
       error: () => {
         /* categorías opcionales */
+      },
+    });
+  }
+
+  cargarRecomendados(): void {
+    this.cargandoRecomendados.set(true);
+    this.ia.recomendar(6).subscribe({
+      next: (p) => {
+        this.recomendados.set(p);
+        this.cargandoRecomendados.set(false);
+      },
+      error: () => {
+        // La sección de recomendados es opcional: no bloquea el catálogo.
+        this.cargandoRecomendados.set(false);
       },
     });
   }

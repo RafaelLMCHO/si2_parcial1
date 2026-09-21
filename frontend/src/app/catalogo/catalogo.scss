@@ -31,6 +31,37 @@
 
 .product-card { cursor: pointer; }
 
+.recomendados {
+  margin-bottom: 28px;
+}
+
+.recomendados-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 8px 0 12px;
+}
+
+.recomendados-row {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scroll-snap-type: x proximity;
+}
+
+.recomendados-row .product-card-row {
+  flex: 0 0 200px;
+  scroll-snap-align: start;
+}
+
+.recomendados-row .product-card-row .product-img {
+  height: 150px;
+  object-fit: cover;
+}
+
 .product-card .mat-mdc-card-title {
   font-size: 1.15rem !important;
   font-weight: 600 !important;
