@@ -67,7 +67,6 @@ export class BitacoraComponent implements OnInit {
     this.entidad = '';
     this.fechaDesde = '';
     this.fechaHasta = '';
-    this.columnaFiltro.set('');
     this.buscar();
   }
 

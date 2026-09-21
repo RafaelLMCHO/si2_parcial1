@@ -107,10 +107,57 @@ export class DashboardComponent {
     },
   ];
 
-  readonly quick = computed(() => {
-    const accesos = [...this.quickBase];
-    if (this.usuario()?.rol === 'admin' || this.usuario()?.rol === 'encargado') {
-      accesos.unshift({
+readonly quick = computed(() => {
+    const rol = this.usuario()?.rol;
+    const accesos: QuickItem[] = [];
+    if (rol === 'admin') {
+      accesos.push(
+        {
+          ruta: '/gestion/productos',
+          icon: 'inventory',
+          titulo: 'Gestión de productos',
+          desc: 'Crea, edita y desactiva productos y sus variantes.',
+          color: 'q-blue',
+        },
+        {
+          ruta: '/gestion/usuarios',
+          icon: 'manage_accounts',
+          titulo: 'Gestión de usuarios',
+          desc: 'Administra usuarios y asigna roles y sucursal.',
+          color: 'q-violet',
+        },
+        {
+          ruta: '/gestion/proveedores',
+          icon: 'local_shipping',
+          titulo: 'Gestión de proveedores',
+          desc: 'Administra proveedores y sus datos de contacto.',
+          color: 'q-violet',
+        },
+        {
+          ruta: '/gestion/temporadas',
+          icon: 'event_repeat',
+          titulo: 'Temporadas y colecciones',
+          desc: 'Define ciclos comerciales y colecciones promocionales.',
+          color: 'q-green',
+        },
+        {
+          ruta: '/gestion/pagos',
+          icon: 'payments',
+          titulo: 'Gestión de pagos',
+          desc: 'Supervisa pagos digitales y la pasarela de pago.',
+          color: 'q-blue',
+        },
+        {
+          ruta: '/gestion/inventario',
+          icon: 'inventory_2',
+          titulo: 'Gestión de inventario',
+          desc: 'Controla stock, movimientos y transferencias.',
+          color: 'q-amber',
+        },
+      );
+    }
+    if (rol === 'admin' || rol === 'encargado') {
+      accesos.push({
         ruta: '/reportes',
         icon: 'insights',
         titulo: 'Reportes y dashboards',
@@ -118,13 +165,14 @@ export class DashboardComponent {
         color: 'q-amber',
       });
     }
-    if (this.usuario()?.rol === 'admin') {
-      accesos.unshift({
-        ruta: '/gestion/productos',
-        icon: 'inventory',
-        titulo: 'Gestión de productos',
-        desc: 'Crea, edita y desactiva productos y sus variantes.',
-        color: 'q-blue',
+    accesos.push(...this.quickBase);
+    if (rol === 'admin') {
+      accesos.push({
+        ruta: '/gestion/bitacora',
+        icon: 'history',
+        titulo: 'Bitácora (CU-23)',
+        desc: 'Registro de acciones del sistema, exclusivo para administradores.',
+        color: 'q-green',
       });
     }
     return accesos;
