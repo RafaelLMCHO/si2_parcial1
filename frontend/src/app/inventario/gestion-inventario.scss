@@ -1,0 +1,269 @@
+.page-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.header-section {
+  margin-bottom: 24px;
+
+  .page-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin: 0 0 6px;
+    color: #1e293b;
+
+    .title-icon {
+      font-size: 2rem;
+      width: 2rem;
+      height: 2rem;
+      color: #6366f1;
+    }
+  }
+
+  .subtitle {
+    color: #64748b;
+    margin: 0;
+    font-size: 0.95rem;
+  }
+}
+
+.filters-bar {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-top: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+
+  mat-form-field {
+    min-width: 180px;
+  }
+
+  .search-input {
+    flex: 1;
+    min-width: 240px;
+  }
+
+  .clickable {
+    cursor: pointer;
+  }
+}
+
+.spinner-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 0;
+  gap: 12px;
+  color: #64748b;
+}
+
+.error-box {
+  text-align: center;
+  padding: 40px;
+  color: #ef4444;
+}
+
+.vacio-card {
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+
+  .vacio-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 8px;
+  }
+}
+
+.table-responsive {
+  overflow-x: auto;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.inv-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+
+  th, td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  th {
+    background-color: #f8fafc;
+    font-weight: 700;
+    color: #334155;
+  }
+
+  tr.alerta-row {
+    background-color: #fff1f2;
+  }
+
+  .table-img {
+    width: 44px;
+    height: 44px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+  }
+
+  code {
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+  }
+
+  .cant-disponible {
+    font-size: 1rem;
+    color: #15803d;
+
+    &.danger {
+      color: #ef4444;
+    }
+  }
+
+  .input-stock-min {
+    width: 60px;
+    padding: 4px 8px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    text-align: center;
+    font-weight: 600;
+  }
+
+  .stock-badge {
+    padding: 4px 8px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+
+    &.bajo {
+      background-color: #fee2e2;
+      color: #991b1b;
+    }
+
+    &.ok {
+      background-color: #dcfce7;
+      color: #166534;
+    }
+  }
+
+  .acciones-cell {
+    display: flex;
+    gap: 4px;
+  }
+}
+
+.transf-container {
+  padding: 24px 0;
+
+  .transf-card {
+    max-width: 650px;
+    margin: 0 auto;
+    border-radius: 12px;
+
+    .transf-form {
+      padding: 20px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+
+      .duo {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+
+      .btn-transf {
+        padding: 12px;
+        font-size: 1rem;
+        font-weight: 700;
+        margin-top: 8px;
+      }
+    }
+  }
+}
+
+.mov-container {
+  padding: 24px 0;
+
+  .mov-tabla {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    th {
+      background-color: #f8fafc;
+      font-weight: 700;
+    }
+
+    .tipo-badge {
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+
+      &.entrada {
+        background: #dcfce7;
+        color: #15803d;
+      }
+      &.salida {
+        background: #fee2e2;
+        color: #b91c1c;
+      }
+      &.ajuste {
+        background: #e0e7ff;
+        color: #3730a3;
+      }
+    }
+  }
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+
+  .modal-card {
+    width: 440px;
+    border-radius: 12px;
+
+    .modal-body {
+      padding: 16px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      padding: 16px 0 0;
+    }
+  }
+}

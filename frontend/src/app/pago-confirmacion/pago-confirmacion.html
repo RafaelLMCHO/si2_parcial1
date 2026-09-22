@@ -1,0 +1,39 @@
+<nav class="pago-confirmacion-nav">
+  <a routerLink="/dashboard">Volver al inicio</a>
+</nav>
+
+<div class="confirmacion-contenedor">
+  <h2 class="titulo">Confirmando tu pago...</h2>
+
+  <mat-progress-spinner
+    *ngIf="cargando"
+    mode="indeterminate"
+    diameter="52"
+    color="primary"
+  ></mat-progress-spinner>
+
+  <mat-card *ngIf="confirmado() as res; else sinConfirmar" class="confirmacion-tarjeta">
+    <mat-icon color="primary" class="icono">check_circle</mat-icon>
+    <h3>¡Compra confirmada!</h3>
+    <p class="detalle">
+      Tu pedido #{{ res.id_pedido }} por
+      <strong>{{ res.total | currency }}</strong>
+      ({{ res.estado }}) ya está en camino.
+    </p>
+    <p class="fecha">Procesado el {{ res.fecha_pedido | date: 'medium' }}</p>
+    <button mat-raised-button color="primary" routerLink="/compras">
+      Ver mis compras
+    </button>
+  </mat-card>
+
+  <ng-template #sinConfirmar>
+    <mat-card *ngIf="error() as err" class="error-tarjeta">
+      <mat-icon color="warn" class="icono">error_outline</mat-icon>
+      <h3>No se pudo confirmar el pago</h3>
+      <p class="detalle">{{ err }}</p>
+      <button mat-raised-button color="primary" routerLink="/carrito">
+        Regresar al carrito
+      </button>
+    </mat-card>
+  </ng-template>
+</div>

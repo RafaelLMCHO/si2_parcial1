@@ -355,7 +355,10 @@ def pagar_reserva_digital(
         raise HTTPException(status_code=404, detail="Reserva no encontrada")
     if reserva.usuario_id != current.id_usuario and current.rol != "admin":
         raise HTTPException(status_code=403, detail="No tienes permiso sobre esta reserva")
-    if reserva.estado.value if hasattr(reserva.estado, 'value') else str(reserva.estado) not in ("pendiente", "preparada"):
+    estado_reserva = (
+        reserva.estado.value if hasattr(reserva.estado, "value") else str(reserva.estado)
+    )
+    if estado_reserva not in ("pendiente", "preparada"):
         raise HTTPException(status_code=400, detail="Solo se pueden pagar reservas pendientes o preparadas")
 
     if not confirmar_pago_simulado():

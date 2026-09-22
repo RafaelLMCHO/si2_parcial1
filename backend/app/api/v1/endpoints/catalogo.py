@@ -23,16 +23,22 @@ from app.models.inventario import MovimientoInventario
 from app.models.ventas import Pedido, PedidoItem
 from app.schemas.comercio import (
     CategoriaOut,
+    ColeccionCreate,
     ColeccionOut,
+    ColeccionUpdate,
     ColorOut,
     ProductoCreate,
     ProductoOut,
     ProductoUpdate,
     ProductoVarianteCreate,
     ProductoVarianteOut,
+    ProveedorCreate,
     ProveedorOut,
+    ProveedorUpdate,
     TallaOut,
+    TemporadaCreate,
     TemporadaOut,
+    TemporadaUpdate,
 )
 
 router = APIRouter()
@@ -62,8 +68,10 @@ def _verificar_magic(contenido: bytes, content_type: str) -> bool:
 
 
 def _maestro_o_404(db: Session, modelo, id_valor: int, nombre: str):
-    if not db.get(modelo, id_valor):
+    instancia = db.get(modelo, id_valor)
+    if not instancia:
         raise HTTPException(status_code=404, detail=f"{nombre} no encontrado/a")
+    return instancia
 
 
 def _producto_cargado(db: Session, producto_id: int, con_variantes: bool = True) -> Producto:
@@ -155,6 +163,261 @@ def list_colecciones(db: Session = Depends(get_db)):
 )
 def list_proveedores(db: Session = Depends(get_db)):
     return db.query(Proveedor).order_by(Proveedor.nombre).all()
+
+
+@router.post(
+    "/proveedores",
+    response_model=ProveedorOut,
+    status_code=status.HTTP_201_CREATED,
+    summary="Crear proveedor (CU14, RF20/RF21)",
+)
+def create_proveedor(
+    data: ProveedorCreate,
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(admin_required),
+):
+    if db.query(Proveedor).filter(Proveedor.nombre == data.nombre).first():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Ya existe un proveedor con ese nombre",
+        )
+    proveedor = Proveedor(**data.model_dump())
+    db.add(proveedor)
+    db.commit()
+    db.refresh(proveedor)
+    return proveedor
+
+
+@router.patch(
+    "/proveedores/{proveedor_id}",
+    response_model=ProveedorOut,
+    summary="Actualizar proveedor (CU14, RF22)",
+)
+def update_proveedor(
+    proveedor_id: int,
+    data: ProveedorUpdate,
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(admin_required),
+):
+    proveedor = _maestro_o_404(db, Proveedor, proveedor_id, "Proveedor")
+    if data.nombre is not None:
+        duplicado = (
+            db.query(Proveedor)
+            .filter(
+                Proveedor.nombre == data.nombre,
+                Proveedor.id_proveedor != proveedor_id,
+            )
+            .first()
+        )
+        if duplicado:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Ya existe un proveedor con ese nombre",
+            )
+    cambios = data.model_dump(exclude_unset=True)
+    for campo, valor in cambios.items():
+        setattr(proveedor, campo, valor)
+    db.commit()
+    db.refresh(proveedor)
+    return proveedor
+
+
+@router.delete(
+    "/proveedores/{proveedor_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Desactivar proveedor (CU14)",
+)
+def deactivate_proveedor(
+    proveedor_id: int,
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(admin_required),
+):
+    proveedor = _maestro_o_404(db, Proveedor, proveedor_id, "Proveedor")
+    tiene_productos = (
+        db.query(Producto)
+        .filter(Producto.proveedor_id == proveedor_id, Producto.activo == True)  # noqa: E712
+        .first()
+    )
+    if tiene_productos:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="No se puede eliminar: el proveedor tiene productos activos asociados",
+        )
+    db.delete(proveedor)
+    db.commit()
+    return {"ok": True, "eliminado": proveedor_id}
+
+
+@router.post(
+    "/temporadas",
+    response_model=TemporadaOut,
+    status_code=status.HTTP_201_CREATED,
+    summary="Crear temporada (CU15)",
+)
+def create_temporada(
+    data: TemporadaCreate,
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(admin_required),
+):
+    if db.query(Temporada).filter(Temporada.nombre == data.nombre).first():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Ya existe una temporada con ese nombre",
+        )
+    temporada = Temporada(**data.model_dump())
+    db.add(temporada)
+    db.commit()
+    db.refresh(temporada)
+    return temporada
+
+
+@router.patch(
+    "/temporadas/{temporada_id}",
+    response_model=TemporadaOut,
+    summary="Actualizar temporada (CU15)",
+)
+def update_temporada(
+    temporada_id: int,
+    data: TemporadaUpdate,
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(admin_required),
+):
+    temporada = _maestro_o_404(db, Temporada, temporada_id, "Temporada")
+    if data.nombre is not None:
+        duplicado = (
+            db.query(Temporada)
+            .filter(
+                Temporada.nombre == data.nombre,
+                Temporada.id_temporada != temporada_id,
+            )
+            .first()
+        )
+        if duplicado:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Ya existe una temporada con ese nombre",
+            )
+    cambios = data.model_dump(exclude_unset=True)
+    for campo, valor in cambios.items():
+        setattr(temporada, campo, valor)
+    db.commit()
+    db.refresh(temporada)
+    return temporada
+
+
+@router.delete(
+    "/temporadas/{temporada_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Eliminar temporada (CU15)",
+)
+def delete_temporada(
+    temporada_id: int,
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(admin_required),
+):
+    temporada = _maestro_o_404(db, Temporada, temporada_id, "Temporada")
+    usa_coleccion = (
+        db.query(Coleccion)
+        .filter(Coleccion.temporada_id == temporada_id)
+        .first()
+    )
+    usa_producto = (
+        db.query(Producto)
+        .filter(Producto.temporada_id == temporada_id)
+        .first()
+    )
+    if usa_coleccion or usa_producto:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="No se puede eliminar: la temporada está en uso por colecciones o productos",
+        )
+    db.delete(temporada)
+    db.commit()
+    return {"ok": True, "eliminado": temporada_id}
+
+
+@router.post(
+    "/colecciones",
+    response_model=ColeccionOut,
+    status_code=status.HTTP_201_CREATED,
+    summary="Crear colección (CU15)",
+)
+def create_coleccion(
+    data: ColeccionCreate,
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(admin_required),
+):
+    _maestro_o_404(db, Temporada, data.temporada_id, "Temporada")
+    if db.query(Coleccion).filter(Coleccion.nombre == data.nombre).first():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Ya existe una colección con ese nombre",
+        )
+    coleccion = Coleccion(**data.model_dump())
+    db.add(coleccion)
+    db.commit()
+    db.refresh(coleccion)
+    return coleccion
+
+
+@router.patch(
+    "/colecciones/{coleccion_id}",
+    response_model=ColeccionOut,
+    summary="Actualizar colección (CU15)",
+)
+def update_coleccion(
+    coleccion_id: int,
+    data: ColeccionUpdate,
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(admin_required),
+):
+    coleccion = _maestro_o_404(db, Coleccion, coleccion_id, "Colección")
+    if data.temporada_id is not None:
+        _maestro_o_404(db, Temporada, data.temporada_id, "Temporada")
+    if data.nombre is not None:
+        duplicado = (
+            db.query(Coleccion)
+            .filter(
+                Coleccion.nombre == data.nombre,
+                Coleccion.id_coleccion != coleccion_id,
+            )
+            .first()
+        )
+        if duplicado:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Ya existe una colección con ese nombre",
+            )
+    cambios = data.model_dump(exclude_unset=True)
+    for campo, valor in cambios.items():
+        setattr(coleccion, campo, valor)
+    db.commit()
+    db.refresh(coleccion)
+    return coleccion
+
+
+@router.delete(
+    "/colecciones/{coleccion_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Eliminar colección (CU15)",
+)
+def delete_coleccion(
+    coleccion_id: int,
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(admin_required),
+):
+    coleccion = _maestro_o_404(db, Coleccion, coleccion_id, "Colección")
+    usa_producto = (
+        db.query(Producto).filter(Producto.coleccion_id == coleccion_id).first()
+    )
+    if usa_producto:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="No se puede eliminar: la colección está en uso por productos",
+        )
+    db.delete(coleccion)
+    db.commit()
+    return {"ok": True, "eliminado": coleccion_id}
 
 
 @router.get(

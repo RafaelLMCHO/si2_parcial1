@@ -1,0 +1,221 @@
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.header-section {
+  margin-bottom: 24px;
+
+  .page-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin: 0 0 6px;
+    color: #1e293b;
+
+    .title-icon {
+      font-size: 2rem;
+      width: 2rem;
+      height: 2rem;
+      color: #6366f1;
+    }
+  }
+
+  .subtitle {
+    color: #64748b;
+    margin: 0;
+    font-size: 0.95rem;
+  }
+}
+
+.pagos-tabs {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  padding: 16px;
+}
+
+.filters-bar {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-top: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+
+  mat-form-field {
+    min-width: 220px;
+  }
+
+  .btn-refresh {
+    height: 48px;
+  }
+}
+
+.spinner-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 0;
+  gap: 12px;
+  color: #64748b;
+}
+
+.error-box {
+  text-align: center;
+  padding: 40px;
+  color: #ef4444;
+}
+
+.vacio-card {
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+
+  .vacio-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 8px;
+  }
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+.pagos-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+
+  th, td {
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  th {
+    background-color: #f8fafc;
+    font-weight: 700;
+    color: #334155;
+  }
+
+  td.monto {
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  code {
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+  }
+
+  .prov-badge {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+
+    &.stripe {
+      background: #e0e7ff;
+      color: #3730a3;
+    }
+
+    &.punto-de-venta {
+      background: #dcfce7;
+      color: #15803d;
+    }
+  }
+
+  .badge-estado {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+
+    &.aprobado {
+      background-color: #dcfce7;
+      color: #15803d;
+    }
+
+    &.pendiente {
+      background-color: #fef9c3;
+      color: #a16207;
+    }
+
+    &.rechazado {
+      background-color: #fee2e2;
+      color: #b91c1c;
+    }
+
+    &.reembolsado {
+      background-color: #e2e8f0;
+      color: #475569;
+    }
+  }
+}
+
+.sandbox-container {
+  padding: 24px 0;
+
+  .sandbox-card {
+    border-radius: 12px;
+
+    .sandbox-content {
+      padding: 20px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .sandbox-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .presets-buttons {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.9rem;
+      color: #475569;
+    }
+
+    .sandbox-actions {
+      display: flex;
+      gap: 16px;
+
+      button {
+        padding: 10px 20px;
+      }
+    }
+
+    .result-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      border-radius: 8px;
+      font-weight: 600;
+
+      &.exito {
+        background: #f0fdf4;
+        color: #15803d;
+        border: 1px solid #bbf7d0;
+      }
+
+      &.error {
+        background: #fef2f2;
+        color: #b91c1c;
+        border: 1px solid #fecaca;
+      }
+    }
+  }
+}

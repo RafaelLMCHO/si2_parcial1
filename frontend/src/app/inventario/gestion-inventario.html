@@ -1,0 +1,316 @@
+<app-navbar></app-navbar>
+
+<div class="page-container">
+  <div class="header-section">
+    <h1 class="page-title">
+      <mat-icon class="title-icon">inventory_2</mat-icon>
+      Gestión de Inventario Global y Local (CU-13)
+    </h1>
+    <p class="subtitle">Control de stock por sucursal, entradas/salidas, transferencias y alertas de stock bajo</p>
+  </div>
+
+  <mat-tab-group animationDuration="200ms" (selectedTabChange)="$event.index === 2 ? cargarHistorialMovimientos() : null">
+    <!-- Pestaña 1: Control de Stock -->
+    <mat-tab label="Existencias de Inventario">
+      <div class="filters-bar">
+        <mat-form-field appearance="outline" dense *ngIf="esAdmin()">
+          <mat-label>Sucursal</mat-label>
+          <mat-select [value]="sucursalFiltro()" (selectionChange)="sucursalFiltro.set($event.value); cargarInventario()">
+            <mat-option [value]="null">Todas las sucursales (Global)</mat-option>
+            <mat-option *ngFor="let s of sucursales()" [value]="s.id_sucursal">
+              {{ s.nombre }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" dense>
+          <mat-label>Categoría</mat-label>
+          <mat-select [value]="categoriaFiltro()" (selectionChange)="categoriaFiltro.set($event.value); cargarInventario()">
+            <mat-option [value]="null">Todas las categorías</mat-option>
+            <mat-option *ngFor="let c of categorias()" [value]="c.id_categoria">
+              {{ c.nombre }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="search-input" dense>
+          <mat-label>Buscar producto o SKU...</mat-label>
+          <input
+            matInput
+            [value]="busqueda()"
+            (input)="busqueda.set(inputB.value)"
+            (keyup.enter)="cargarInventario()"
+            #inputB
+          />
+          <mat-icon matSuffix (click)="cargarInventario()" class="clickable">search</mat-icon>
+        </mat-form-field>
+
+        <mat-slide-toggle
+          [checked]="soloStockBajo()"
+          (change)="soloStockBajo.set($event.checked); cargarInventario()"
+          color="warn"
+        >
+          Solo Alertas de Stock Bajo
+        </mat-slide-toggle>
+
+        <button mat-stroked-button color="primary" (click)="cargarInventario()">
+          <mat-icon>refresh</mat-icon> Actualizar
+        </button>
+      </div>
+
+      <div *ngIf="cargando()" class="spinner-box">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Cargando datos de inventario...</p>
+      </div>
+
+      <div *ngIf="error()" class="error-box">
+        <mat-icon color="warn">error_outline</mat-icon>
+        <p>{{ error() }}</p>
+        <button mat-raised-button color="primary" (click)="cargarInventario()">Reintentar</button>
+      </div>
+
+      <ng-container *ngIf="!cargando() && !error()">
+        <mat-card class="vacio-card" *ngIf="inventario().length === 0">
+          <mat-card-content>
+            <mat-icon class="vacio-icon">search_off</mat-icon>
+            <p>No se encontraron registros de inventario para los criterios seleccionados.</p>
+          </mat-card-content>
+        </mat-card>
+
+        <div class="table-responsive" *ngIf="inventario().length > 0">
+          <table class="inv-tabla">
+            <thead>
+              <tr>
+                <th>Foto</th>
+                <th>Prenda / Producto</th>
+                <th>Talla / Color</th>
+                <th>SKU</th>
+                <th>Sucursal</th>
+                <th>Precio</th>
+                <th>Disponible</th>
+                <th>Reservado</th>
+                <th>Stock Mínimo</th>
+                <th>Estado Stock</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of inventario()" [class.alerta-row]="item.stock_bajo">
+                <td>
+                  <img
+                    [src]="item.imagen_url || 'assets/placeholder.svg'"
+                    (error)="onImagenError($event)"
+                    [alt]="item.producto_nombre"
+                    class="table-img"
+                  />
+                </td>
+                <td><strong>{{ item.producto_nombre }}</strong></td>
+                <td>{{ item.talla || '—' }} · {{ item.color || '—' }}</td>
+                <td><code>{{ item.sku || '—' }}</code></td>
+                <td>{{ item.sucursal_nombre }}</td>
+                <td>{{ item.precio | currency: 'Bs.' : 'symbol' : '1.2-2' }}</td>
+                <td class="cant-disponible" [class.danger]="item.cantidad_disponible === 0">
+                  <strong>{{ item.cantidad_disponible }}</strong>
+                </td>
+                <td>{{ item.cantidad_reservada }}</td>
+                <td>
+                  <input
+                    type="number"
+                    min="0"
+                    [value]="item.stock_minimo"
+                    (change)="actualizarStockMin(item, +inputMin.value)"
+                    class="input-stock-min"
+                    #inputMin
+                  />
+                </td>
+                <td>
+                  <span class="stock-badge" [ngClass]="item.stock_bajo ? 'bajo' : 'ok'">
+                    {{ item.stock_bajo ? '⚠️ STOCK BAJO' : '✅ NORMAL' }}
+                  </span>
+                </td>
+                <td class="acciones-cell">
+                  <button mat-icon-button color="primary" matTooltip="Entrada de Stock" (click)="abrirMovimientoModal(item, 'entrada')">
+                    <mat-icon>add_box</mat-icon>
+                  </button>
+                  <button mat-icon-button color="warn" matTooltip="Salida / Baja" (click)="abrirMovimientoModal(item, 'salida')">
+                    <mat-icon>indeterminate_check_box</mat-icon>
+                  </button>
+                  <button mat-icon-button color="accent" matTooltip="Ajuste Manual" (click)="abrirMovimientoModal(item, 'ajuste')">
+                    <mat-icon>tune</mat-icon>
+                  </button>
+                  <button mat-icon-button color="primary" matTooltip="Transferir a otra sucursal" (click)="prepararTransferencia(item)">
+                    <mat-icon>swap_horiz</mat-icon>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </ng-container>
+    </mat-tab>
+
+    <!-- Pestaña 2: Transferencias -->
+    <mat-tab label="Transferencia entre Sucursales">
+      <div class="transf-container">
+        <mat-card class="transf-card">
+          <mat-card-header>
+            <mat-card-title>Traslado de Mercancía entre Sucursales</mat-card-title>
+            <mat-card-subtitle>Mueve unidades de una sucursal origen a otra sucursal destino</mat-card-subtitle>
+          </mat-card-header>
+
+          <mat-card-content class="transf-form">
+            <div class="duo">
+              <mat-form-field appearance="outline">
+                <mat-label>Sucursal Origen (Sale stock)</mat-label>
+                <mat-select [value]="sucursalOrigenId()" (selectionChange)="sucursalOrigenId.set($event.value)">
+                  <mat-option *ngFor="let s of sucursales()" [value]="s.id_sucursal">
+                    {{ s.nombre }}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Sucursal Destino (Ingresa stock)</mat-label>
+                <mat-select [value]="sucursalDestinoId()" (selectionChange)="sucursalDestinoId.set($event.value)">
+                  <mat-option *ngFor="let s of sucursales()" [value]="s.id_sucursal">
+                    {{ s.nombre }}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Prenda / Variante a Transferir</mat-label>
+              <mat-select [value]="varianteTransfId()" (selectionChange)="varianteTransfId.set($event.value)">
+                <mat-option *ngFor="let i of inventario()" [value]="i.variante_id">
+                  {{ i.producto_nombre }} ({{ i.talla }} - {{ i.color }}) — Stock Origen: {{ i.cantidad_disponible }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Cantidad de prendas a transferir</mat-label>
+              <input
+                matInput
+                type="number"
+                min="1"
+                [value]="cantidadTransf()"
+                (input)="cantidadTransf.set(+inputCantT.value)"
+                #inputCantT
+              />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Observación / Motivo de traslado</mat-label>
+              <input
+                matInput
+                [value]="observacionTransf()"
+                (input)="observacionTransf.set(inputObsT.value)"
+                placeholder="Ej. Reabastecimiento de prendas por temporada"
+                #inputObsT
+              />
+            </mat-form-field>
+
+            <button
+              mat-raised-button
+              color="primary"
+              class="btn-transf"
+              [disabled]="guardandoTransf()"
+              (click)="guardarTransferencia()"
+            >
+              <mat-icon>{{ guardandoTransf() ? 'sync' : 'local_shipping' }}</mat-icon>
+              {{ guardandoTransf() ? 'Procesando transferencia...' : 'Confirmar Transferencia' }}
+            </button>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </mat-tab>
+
+    <!-- Pestaña 3: Histórico de Movimientos -->
+    <mat-tab label="Histórico de Movimientos (Bitácora)">
+      <div class="mov-container">
+        <div *ngIf="cargandoMov()" class="spinner-box">
+          <mat-spinner diameter="40"></mat-spinner>
+          <p>Cargando historial de movimientos...</p>
+        </div>
+
+        <div class="table-responsive" *ngIf="!cargandoMov() && movimientos().length > 0">
+          <table class="mov-tabla">
+            <thead>
+              <tr>
+                <th>ID Movimiento</th>
+                <th>Fecha</th>
+                <th>Sucursal ID</th>
+                <th>Variante ID</th>
+                <th>Tipo Movimiento</th>
+                <th>Cantidad</th>
+                <th>Observación</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let m of movimientos()">
+                <td>#{{ m.id_movimiento }}</td>
+                <td>{{ m.fecha_movimiento | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td>Sucursal #{{ m.sucursal_id }}</td>
+                <td>Variante #{{ m.variante_id }}</td>
+                <td>
+                  <span class="tipo-badge" [ngClass]="m.tipo_movimiento.toLowerCase()">
+                    {{ m.tipo_movimiento | uppercase }}
+                  </span>
+                </td>
+                <td><strong>{{ m.cantidad }}</strong></td>
+                <td>{{ m.observacion || '—' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+
+  <!-- Modal Movimiento Directo -->
+  <div class="modal-overlay" *ngIf="itemSeleccionado()">
+    <mat-card class="modal-card">
+      <mat-card-header>
+        <mat-card-title>Registrar {{ tipoMovimiento() | uppercase }} de Stock</mat-card-title>
+        <mat-card-subtitle>
+          {{ itemSeleccionado()?.producto_nombre }} · {{ itemSeleccionado()?.sucursal_nombre }}
+        </mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content class="modal-body">
+        <p>Stock actual disponible: <strong>{{ itemSeleccionado()?.cantidad_disponible }}</strong></p>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Cantidad</mat-label>
+          <input
+            matInput
+            type="number"
+            min="1"
+            [value]="cantidadMov()"
+            (input)="cantidadMov.set(+inputCantM.value)"
+            #inputCantM
+          />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Observación (Opcional)</mat-label>
+          <input
+            matInput
+            [value]="observacionMov()"
+            (input)="observacionMov.set(inputObsM.value)"
+            placeholder="Ej. Recepción de proveedor / Ajuste de inventario"
+            #inputObsM
+          />
+        </mat-form-field>
+      </mat-card-content>
+
+      <mat-card-actions class="modal-actions">
+        <button mat-button (click)="cerrarModal()">Cancelar</button>
+        <button mat-raised-button color="primary" [disabled]="guardandoMov()" (click)="guardarMovimiento()">
+          <mat-icon>{{ guardandoMov() ? 'sync' : 'save' }}</mat-icon> Guardar Movimiento
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+</div>

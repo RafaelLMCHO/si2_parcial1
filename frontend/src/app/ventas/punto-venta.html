@@ -1,0 +1,242 @@
+<app-navbar></app-navbar>
+
+<div class="pos-container">
+  <!-- Encabezado POS -->
+  <div class="pos-header">
+    <div class="header-info">
+      <h1>
+        <mat-icon class="pos-icon">point_of_sale</mat-icon>
+        Punto de Venta (POS) - Caja
+      </h1>
+      <span class="sucursal-badge">
+        <mat-icon>store</mat-icon>
+        {{ sucursalNombre() }}
+      </span>
+    </div>
+
+    <div class="sucursal-selector" *ngIf="usuario()?.rol === 'admin'">
+      <mat-form-field appearance="outline" dense>
+        <mat-label>Sucursal activa</mat-label>
+        <mat-select [value]="sucursalSel()" (selectionChange)="sucursalSel.set($event.value)">
+          <mat-option *ngFor="let s of sucursales()" [value]="s.id_sucursal">
+            {{ s.nombre }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+  </div>
+
+  <!-- Modal de Comprobante / Ticket Generado -->
+  <div class="comprobante-overlay" *ngIf="comprobante()">
+    <mat-card class="comprobante-card">
+      <mat-card-header>
+        <mat-card-title>Comprobante de Venta Presencial</mat-card-title>
+        <mat-card-subtitle>FashionStore · {{ comprobante()?.sucursal_nombre }}</mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-divider></mat-divider>
+
+      <mat-card-content class="comprobante-body">
+        <div class="ticket-meta">
+          <p><strong>N° Pedido:</strong> #{{ comprobante()?.id_pedido }}</p>
+          <p><strong>Fecha:</strong> {{ comprobante()?.fecha_pedido | date: 'dd/MM/yyyy HH:mm' }}</p>
+          <p><strong>Cajero:</strong> {{ comprobante()?.cajero_nombre }}</p>
+          <p><strong>Forma de pago:</strong> {{ comprobante()?.tipo_pago | uppercase }}</p>
+        </div>
+
+        <mat-divider></mat-divider>
+
+        <table class="comprobante-tabla">
+          <thead>
+            <tr>
+              <th>Prenda</th>
+              <th>Cant.</th>
+              <th>P.Unit</th>
+              <th>Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of comprobante()?.items">
+              <td>
+                <strong>{{ item.producto_nombre }}</strong>
+                <br />
+                <small>{{ item.talla }} · {{ item.color }} ({{ item.sku }})</small>
+              </td>
+              <td>{{ item.cantidad }}</td>
+              <td>{{ item.precio_unitario | currency: 'Bs.' : 'symbol' : '1.2-2' }}</td>
+              <td>{{ item.subtotal | currency: 'Bs.' : 'symbol' : '1.2-2' }}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <mat-divider></mat-divider>
+
+        <div class="comprobante-total">
+          <span>TOTAL COMPRA:</span>
+          <strong>{{ comprobante()?.total | currency: 'Bs.' : 'symbol' : '1.2-2' }}</strong>
+        </div>
+      </mat-card-content>
+
+      <mat-card-actions class="comprobante-actions">
+        <button mat-raised-button color="primary" onclick="window.print()">
+          <mat-icon>print</mat-icon> Imprimir Ticket
+        </button>
+        <button mat-button (click)="cerrarComprobante()">
+          <mat-icon>check</mat-icon> Nueva Venta
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+
+  <!-- Cuerpo Principal POS: Catálogo vs Ticket -->
+  <div class="pos-layout">
+    <!-- Columna Izquierda: Buscador y Productos -->
+    <div class="catalogo-pane">
+      <div class="search-bar">
+        <mat-form-field appearance="outline" class="search-input">
+          <mat-label>Buscar por nombre de producto o SKU...</mat-label>
+          <input
+            matInput
+            [value]="busqueda()"
+            (input)="busqueda.set(inputQ.value)"
+            (keyup.enter)="onBuscar()"
+            #inputQ
+          />
+          <mat-icon matSuffix (click)="onBuscar()" class="clickable-icon">search</mat-icon>
+        </mat-form-field>
+      </div>
+
+      <div class="productos-grid" *ngIf="!cargandoProductos()">
+        <div class="prod-card" *ngFor="let p of productos()">
+          <img
+            [src]="p.imagen_url || 'assets/placeholder.svg'"
+            (error)="onImagenError($event)"
+            [alt]="p.nombre"
+            class="prod-img"
+          />
+          <div class="prod-details">
+            <span class="prod-title">{{ p.nombre }}</span>
+            <span class="prod-precio">{{ p.precio | currency: 'Bs.' : 'symbol' : '1.2-2' }}</span>
+
+            <!-- Variantes -->
+            <div class="variantes-chips">
+              <button
+                *ngFor="let v of p.variantes"
+                mat-stroked-button
+                class="btn-variante"
+                (click)="agregarAlTicket(p, v)"
+              >
+                + {{ v.talla?.nombre || 'U' }} / {{ v.color?.nombre || 'Gen' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="cargandoProductos()" class="spinner-box">
+        <mat-spinner diameter="40"></mat-spinner>
+      </div>
+    </div>
+
+    <!-- Columna Derecha: Ticket de Venta -->
+    <div class="ticket-pane">
+      <mat-card class="ticket-card">
+        <mat-card-header class="ticket-header">
+          <mat-card-title>Ticket de Venta</mat-card-title>
+          <button mat-icon-button color="warn" (click)="limpiarTicket()" matTooltip="Vaciar Ticket">
+            <mat-icon>delete_sweep</mat-icon>
+          </button>
+        </mat-card-header>
+
+        <mat-divider></mat-divider>
+
+        <mat-card-content class="ticket-items">
+          <div *ngIf="ticket().length === 0" class="ticket-vacio">
+            <mat-icon>shopping_cart</mat-icon>
+            <p>Escanea o selecciona productos para agregarlos al ticket.</p>
+          </div>
+
+          <div class="ticket-item-row" *ngFor="let item of ticket()">
+            <div class="item-info">
+              <strong class="item-name">{{ item.producto_nombre }}</strong>
+              <span class="item-specs">
+                {{ item.talla }} · {{ item.color }} ({{ item.sku }})
+              </span>
+              <span class="item-price">{{ item.precio | currency: 'Bs.' : 'symbol' : '1.2-2' }}</span>
+            </div>
+
+            <div class="item-qty-actions">
+              <button mat-icon-button (click)="cambiarCantidad(item.variante_id, -1)">
+                <mat-icon>remove_circle_outline</mat-icon>
+              </button>
+              <span class="qty-num">{{ item.cantidad }}</span>
+              <button mat-icon-button (click)="cambiarCantidad(item.variante_id, 1)">
+                <mat-icon>add_circle_outline</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" (click)="quitarDelTicket(item.variante_id)">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+          </div>
+        </mat-card-content>
+
+        <mat-divider></mat-divider>
+
+        <!-- Totales y Métodos de Pago -->
+        <mat-card-content class="pago-box">
+          <div class="total-row">
+            <span>TOTAL:</span>
+            <span class="total-monto">{{ totalTicket() | currency: 'Bs.' : 'symbol' : '1.2-2' }}</span>
+          </div>
+
+          <p class="pago-title">Método de pago:</p>
+          <mat-radio-group
+            [value]="tipoPago()"
+            (change)="tipoPago.set($event.value)"
+            class="pago-radio-group"
+          >
+            <mat-radio-button value="efectivo">💵 Efectivo</mat-radio-button>
+            <mat-radio-button value="tarjeta_debito">💳 Débito</mat-radio-button>
+            <mat-radio-button value="tarjeta_credito">💳 Crédito</mat-radio-button>
+            <mat-radio-button value="qr">📲 QR / Transferencia</mat-radio-button>
+          </mat-radio-group>
+
+          <!-- Calculadora de Cambio para Efectivo -->
+          <div class="efectivo-calc" *ngIf="tipoPago() === 'efectivo'">
+            <mat-form-field appearance="outline" class="input-entregado">
+              <mat-label>Monto entregado por cliente (Bs.)</mat-label>
+              <input
+                matInput
+                type="number"
+                [value]="montoEntregado()"
+                (input)="montoEntregado.set(+inputEnt.value)"
+                #inputEnt
+              />
+            </mat-form-field>
+            <div class="cambio-box" [class.ok]="cambioCalculado() >= 0">
+              <span>Cambio a devolver:</span>
+              <strong>{{ cambioCalculado() | currency: 'Bs.' : 'symbol' : '1.2-2' }}</strong>
+            </div>
+          </div>
+
+          <div *ngIf="error()" class="error-msg">
+            <mat-icon>error</mat-icon> {{ error() }}
+          </div>
+        </mat-card-content>
+
+        <mat-card-actions class="ticket-actions">
+          <button
+            mat-raised-button
+            color="primary"
+            class="btn-cobrar"
+            [disabled]="ticket().length === 0 || procesandoVenta()"
+            (click)="procesarVentaPresencial()"
+          >
+            <mat-icon>{{ procesandoVenta() ? 'sync' : 'point_of_sale' }}</mat-icon>
+            {{ procesandoVenta() ? 'Procesando...' : 'Cobrar e Imprimir Ticket' }}
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    </div>
+  </div>
+</div>

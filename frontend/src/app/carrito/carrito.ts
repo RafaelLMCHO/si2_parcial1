@@ -11,6 +11,7 @@ import { MatInputModule } from '@angular/material/input';
 import { CarritoService } from '../services/carrito.service';
 import { ReservaService } from '../services/reserva.service';
 import { SucursalService } from '../services/sucursal.service';
+import { VentasService } from '../services/ventas.service';
 import { NavbarComponent } from '../shared/navbar';
 
 @Component({
@@ -35,6 +36,7 @@ export class CarritoComponent {
   private carrito = inject(CarritoService);
   private reservas = inject(ReservaService);
   private sucursalesServ = inject(SucursalService);
+  private ventas = inject(VentasService);
 
   readonly items = this.carrito.items;
   readonly totalPrendas = this.carrito.totalPrendas;
@@ -44,8 +46,11 @@ export class CarritoComponent {
   readonly sucursalSel = signal<number | null>(null);
   readonly fechaSel = signal('');
   readonly horaSel = signal('10:00');
+  readonly modo = signal<'reserva' | 'compra'>('reserva');
   readonly cargando = signal(false);
-  readonly resultado = signal<{ id: number } | null>(null);
+  readonly pagando = signal(false);
+  readonly mostrarPago = signal(false);
+  readonly resultado = signal<{ id: number; tipo: string } | null>(null);
   readonly error = signal<string | null>(null);
 
   readonly hoy = new Date().toISOString().slice(0, 10);
@@ -78,7 +83,70 @@ export class CarritoComponent {
     img.src = 'assets/placeholder.svg';
   }
 
+  iniciarCompra(): void {
+    const lista = this.items();
+    if (lista.length === 0) return;
+
+    this.error.set(null);
+    this.cargando.set(true);
+    const returnUrl = window.location.origin;
+
+    this.ventas
+      .crearCheckout({
+        sucursal_id: this.sucursalSel() || 1,
+        items: lista.map((i) => ({ variante_id: i.variante_id, cantidad: i.cantidad })),
+        return_url: returnUrl,
+      })
+      .subscribe({
+        next: (sesion) => {
+          this.cargando.set(false);
+          if (sesion.simulado || !sesion.checkout_url) {
+            // Pasarela en modo simulado (sin claves reales): formulario inline
+            this.mostrarPago.set(true);
+            return;
+          }
+          // Pasarela real: redirigir a la página de Stripe (Checkout alojado)
+          window.location.href = sesion.checkout_url;
+        },
+        error: (err) => {
+          this.cargando.set(false);
+          const detail = err?.error?.detail?.toString();
+          this.error.set(detail ?? 'No se pudo iniciar el pago, verifique stock e intente de nuevo');
+        },
+      });
+  }
+
+  procesarPagoSimulado(): void {
+    const lista = this.items();
+    this.error.set(null);
+    this.pagando.set(true);
+
+    this.ventas
+      .confirmarCompra({
+        sucursal_id: this.sucursalSel() || 1,
+        items: lista.map((i) => ({ variante_id: i.variante_id, cantidad: i.cantidad })),
+      })
+      .subscribe({
+        next: (res) => {
+          this.pagando.set(false);
+          this.mostrarPago.set(false);
+          this.resultado.set({ id: res.id_pedido, tipo: 'compra' });
+          this.carrito.limpiar();
+        },
+        error: (err) => {
+          this.pagando.set(false);
+          const detail = err?.error?.detail?.toString();
+          this.error.set(detail ?? 'Error al procesar el pago o confirmar la compra.');
+        },
+      });
+  }
+
   confirmar(): void {
+    if (this.modo() === 'compra') {
+      this.iniciarCompra();
+      return;
+    }
+
     const sucursalId = this.sucursalSel();
     const fecha = this.fechaSel();
     const hora = this.horaSel();
@@ -109,7 +177,7 @@ export class CarritoComponent {
       .subscribe({
         next: (r) => {
           this.cargando.set(false);
-          this.resultado.set({ id: r.id_reserva });
+          this.resultado.set({ id: r.id_reserva, tipo: 'reserva' });
           this.carrito.limpiar();
         },
         error: (err) => {

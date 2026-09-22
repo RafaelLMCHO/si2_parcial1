@@ -6,13 +6,16 @@ import { environment } from '../../environments/environment';
 import {
   Categoria,
   Coleccion,
+  ColeccionForm,
   Color,
   Producto,
   ProductoForm,
   ProductoVariante,
   Proveedor,
+  ProveedorForm,
   Talla,
   Temporada,
+  TemporadaForm,
 } from '../models/catalogo';
 
 export interface ProductoFiltro {
@@ -52,12 +55,48 @@ export class CatalogoService {
     return this.http.get<Proveedor[]>(`${this.api}/proveedores`);
   }
 
+  crearProveedor(data: ProveedorForm): Observable<Proveedor> {
+    return this.http.post<Proveedor>(`${this.api}/proveedores`, data);
+  }
+
+  actualizarProveedor(id: number, data: Partial<ProveedorForm>): Observable<Proveedor> {
+    return this.http.patch<Proveedor>(`${this.api}/proveedores/${id}`, data);
+  }
+
+  eliminarProveedor(id: number): Observable<{ ok: boolean; eliminado: number }> {
+    return this.http.delete<{ ok: boolean; eliminado: number }>(`${this.api}/proveedores/${id}`);
+  }
+
   listarTemporadas(): Observable<Temporada[]> {
     return this.http.get<Temporada[]>(`${this.api}/temporadas`);
   }
 
+  crearTemporada(data: TemporadaForm): Observable<Temporada> {
+    return this.http.post<Temporada>(`${this.api}/temporadas`, data);
+  }
+
+  actualizarTemporada(id: number, data: Partial<TemporadaForm>): Observable<Temporada> {
+    return this.http.patch<Temporada>(`${this.api}/temporadas/${id}`, data);
+  }
+
+  eliminarTemporada(id: number): Observable<{ ok: boolean; eliminado: number }> {
+    return this.http.delete<{ ok: boolean; eliminado: number }>(`${this.api}/temporadas/${id}`);
+  }
+
   listarColecciones(): Observable<Coleccion[]> {
     return this.http.get<Coleccion[]>(`${this.api}/colecciones`);
+  }
+
+  crearColeccion(data: ColeccionForm): Observable<Coleccion> {
+    return this.http.post<Coleccion>(`${this.api}/colecciones`, data);
+  }
+
+  actualizarColeccion(id: number, data: Partial<ColeccionForm>): Observable<Coleccion> {
+    return this.http.patch<Coleccion>(`${this.api}/colecciones/${id}`, data);
+  }
+
+  eliminarColeccion(id: number): Observable<{ ok: boolean; eliminado: number }> {
+    return this.http.delete<{ ok: boolean; eliminado: number }>(`${this.api}/colecciones/${id}`);
   }
 
   listarProductos(filtro: ProductoFiltro = {}): Observable<Producto[]> {

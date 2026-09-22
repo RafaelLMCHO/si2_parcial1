@@ -26,12 +26,12 @@ services:
     restart: unless-stopped
     volumes:
       - backend_uploads:/app/static/uploads
+    env_file:
+      - ./backend/.env
     environment:
       DATABASE_URL: postgresql+psycopg2://postgres:09091991@db:5432/fashionstore
       SECRET_KEY: fashionstore-secret-key-cambiar-en-produccion
       ACCESS_TOKEN_EXPIRE_MINUTES: 120
-      STRIPE_SECRET_KEY: sk_test_placeholder
-      STRIPE_CURRENCY: usd
       DEBUG: "false"
     ports:
       - "8000:8000"

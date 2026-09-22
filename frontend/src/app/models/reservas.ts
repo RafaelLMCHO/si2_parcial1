@@ -30,7 +30,7 @@ export interface Reserva {
   fecha_reserva: string;
   hora_atencion: string;
   estado: string;
-  usuario?: { id_usuario: number; nombre: string } | null;
+  usuario?: { id_usuario: number; nombre: string; email?: string | null; telefono?: string | null } | null;
   sucursal?: {
     id_sucursal: number;
     nombre: string;

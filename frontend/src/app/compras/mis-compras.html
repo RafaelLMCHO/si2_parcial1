@@ -1,0 +1,98 @@
+<app-navbar></app-navbar>
+
+<div class="page-container">
+  <div class="header-section">
+    <h1 class="page-title">
+      <mat-icon class="title-icon">receipt_long</mat-icon>
+      Mis Compras Digitales
+    </h1>
+    <p class="subtitle">Historial de pedidos realizados y comprobantes digitales</p>
+  </div>
+
+  <div *ngIf="cargando()" class="spinner-container">
+    <mat-spinner diameter="48"></mat-spinner>
+    <p>Cargando historial de compras...</p>
+  </div>
+
+  <div *ngIf="error()" class="error-container">
+    <mat-icon color="warn">error_outline</mat-icon>
+    <p>{{ error() }}</p>
+    <button mat-raised-button color="primary" (click)="cargar()">Reintentar</button>
+  </div>
+
+  <ng-container *ngIf="!cargando() && !error()">
+    <mat-card class="vacio-card" *ngIf="pedidos().length === 0">
+      <mat-card-content>
+        <mat-icon class="vacio-icon">shopping_bag</mat-icon>
+        <h2>Aún no has realizado compras digitales</h2>
+        <p>Explora nuestro catálogo y realiza tu primer pedido con entrega o retiro rápido.</p>
+        <a mat-raised-button color="primary" routerLink="/catalogo">
+          <mat-icon>storefront</mat-icon> Ir al catálogo
+        </a>
+      </mat-card-content>
+    </mat-card>
+
+    <div class="pedidos-list" *ngIf="pedidos().length > 0">
+      <mat-card class="pedido-card" *ngFor="let p of pedidos()">
+        <mat-card-header>
+          <div class="header-left">
+            <mat-card-title>Pedido #{{ p.id_pedido }}</mat-card-title>
+            <mat-card-subtitle>
+              Realizado el {{ p.fecha_pedido | date: 'dd/MM/yyyy HH:mm' }} · {{ p.sucursal_nombre }}
+            </mat-card-subtitle>
+          </div>
+          <div class="header-right">
+            <span class="badge-estado" [ngClass]="p.estado.toLowerCase()">
+              {{ p.estado | uppercase }}
+            </span>
+            <span class="metodo-tag">
+              <mat-icon>credit_card</mat-icon>
+              {{ p.tipo_pago || p.metodo_compra | titlecase }}
+            </span>
+          </div>
+        </mat-card-header>
+
+        <mat-divider></mat-divider>
+
+        <mat-card-content class="pedido-content">
+          <div class="items-list">
+            <div class="item-row" *ngFor="let item of p.items">
+              <img
+                [src]="item.imagen_url || 'assets/placeholder.svg'"
+                (error)="onImagenError($event)"
+                [alt]="item.producto_nombre"
+                class="item-img"
+              />
+              <div class="item-details">
+                <span class="item-name">{{ item.producto_nombre }}</span>
+                <span class="item-meta">
+                  Talla: <strong>{{ item.talla || 'Única' }}</strong> |
+                  Color: <strong>{{ item.color || 'Estándar' }}</strong> |
+                  SKU: {{ item.sku || '—' }}
+                </span>
+                <span class="item-qty-price">
+                  Cantidad: {{ item.cantidad }} x {{ item.precio_unitario | currency: 'Bs.' : 'symbol' : '1.2-2' }}
+                </span>
+              </div>
+              <div class="item-subtotal">
+                {{ item.subtotal | currency: 'Bs.' : 'symbol' : '1.2-2' }}
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+
+        <mat-divider></mat-divider>
+
+        <mat-card-actions class="pedido-footer">
+          <div class="total-info">
+            <span class="total-label">Total pagado:</span>
+            <span class="total-monto">{{ p.total | currency: 'Bs.' : 'symbol' : '1.2-2' }}</span>
+          </div>
+          <button mat-stroked-button color="primary" onclick="window.print()">
+            <mat-icon>print</mat-icon> Imprimir Comprobante
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    </div>
+  </ng-container>
+</div>

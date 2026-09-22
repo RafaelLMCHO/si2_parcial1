@@ -1,0 +1,307 @@
+================================================================================
+PROMPT PARA GENERAR DIAGRAMAS DE COMUNICACION UML
+CICLO #1 - FASHIONSTORE (SOLO BACKEND)
+================================================================================
+
+Genera el diagrama de comunicacion UML de cada caso de uso del CICLO #1 del
+proyecto FashionStore (plataforma de comercio electronico de ropa, backend
+FastAPI + SQLAlchemy). Cada diagrama debe contener UNICAMENTE tres clases con
+sus estereotipos UML y sus metodos:
+
+  - Clase INTERFAZ    «boundary» / «interface»  -> Schemas Pydantic
+  - Clase CONTROL     «control»                 -> Endpoints FastAPI
+  - Clase ENTIDAD     «entity»                  -> Modelos ORM SQLAlchemy
+
+NO tomar en cuenta el frontend. Basarse unicamente en el codigo del backend.
+
+--------------------------------------------------------------------------------
+1) UBICACION DE LAS CLASES EN EL BACKEND (CARPETAS)
+--------------------------------------------------------------------------------
+- Clase INTERFAZ:  backend/app/schemas/usuario.py
+                   backend/app/schemas/comercio.py
+- Clase CONTROL:   backend/app/api/v1/endpoints/auth.py
+                   backend/app/api/v1/endpoints/usuarios.py
+                   backend/app/api/v1/endpoints/sucursales.py
+                   backend/app/api/v1/endpoints/catalogo.py
+                   backend/app/api/v1/endpoints/inventario.py
+                   backend/app/api/v1/endpoints/reservas.py
+  Clases de apoyo del control:
+                   backend/app/core/security.py
+                   backend/app/core/dependencies.py
+                   backend/app/services/notification_service.py
+- Clase ENTIDAD:   backend/app/models/usuario.py
+                   backend/app/models/ubicacion.py
+                   backend/app/models/catalogo.py
+                   backend/app/models/inventario.py
+                   backend/app/models/ventas.py
+
+--------------------------------------------------------------------------------
+2) NOTACION REQUERIDA POR CADA DIAGRAMA
+--------------------------------------------------------------------------------
+- Un rectangulo por objeto con el nombre de la clase y el estereotipo.
+- Un actor identificado por uso de caso (Cliente, Usuario, Encargado, Admin).
+- Mensajes numerados en orden temporal: 1, 1.1, 2, 3, ...
+- Formato de mensaje: N: nombreMetodo(parametros)
+- Indicar en el rectangulo o como nota la ruta de la carpeta donde vive la clase.
+- Incluir el flujo de retorno (respuesta) hacia el actor.
+
+--------------------------------------------------------------------------------
+3) CASOS DE USO DEL CICLO #1 CON SUS CLASES Y METODOS
+--------------------------------------------------------------------------------
+
+CU1 - REGISTRARSE (Actor: Cliente)
+  INTERFAZ (backend/app/schemas/usuario.py): UsuarioCreate, UsuarioOut
+  CONTROL  (backend/app/api/v1/endpoints/auth.py): register()
+           (backend/app/core/security.py): hash_password()
+  ENTIDAD  (backend/app/models/usuario.py): Usuario
+  FLUJO:
+    1: Cliente -> Interfaz: UsuarioCreate(nombre, email, contrasena)
+    2: Interfaz -> Control: register(data)
+    3: Control -> Entidad: crear Usuario (con contrasena cifrada)
+    4: Entidad -> Control: usuario guardado
+    5: Control -> Interfaz: HTTP 201 + UsuarioOut
+    6: Interfaz -> Cliente: confirmacion de registro
+
+CU2 - INICIAR SESION (Actor: Cliente)
+  INTERFAZ (backend/app/schemas/usuario.py): LoginRequest, Token
+  CONTROL  (backend/app/api/v1/endpoints/auth.py): login(), login_form()
+           (backend/app/core/security.py): verify_password(), create_access_token()
+  ENTIDAD  (backend/app/models/usuario.py): Usuario
+  FLUJO:
+    1: Cliente -> Interfaz: LoginRequest(email, contrasena)
+    2: Interfaz -> Control: login(data)
+    3: Control -> Entidad: buscar usuario por email
+    4: Entidad -> Control: usuario (o null)
+    5: Control -> Control: verify_password() + create_access_token()
+    6: Control -> Interfaz: Token(access_token, usuario)
+    7: Interfaz -> Cliente: token JWT
+
+CU3 - GESTIONAR PERFIL (Actor: Usuario autenticado)
+  INTERFAZ (backend/app/schemas/usuario.py): PerfilUpdate, UsuarioOut
+  CONTROL  (backend/app/api/v1/endpoints/auth.py): read_me(), update_me()
+           (backend/app/core/dependencies.py): get_current_user
+  ENTIDAD  (backend/app/models/usuario.py): Usuario
+  FLUJO:
+    1: Usuario -> Interfaz: GET /auth/me (Bearer token)
+    2: Interfaz -> Control: read_me()
+    3: Control -> Entidad: consultar usuario autenticado
+   1.1: Usuario -> Interfaz: PerfilUpdate(nombre, email, telefono)
+   1.2: Interfaz -> Control: update_me(data)
+   1.3: Control -> Entidad: actualizar atributos del usuario
+   1.4: Entidad -> Control: UsuarioOut actualizado
+   1.5: Control -> Interfaz: HTTP 200 + UsuarioOut
+
+CU4 - CONSULTAR CATALOGO (Actor: Usuario)
+  INTERFAZ (backend/app/schemas/comercio.py): ProductoOut, ProductoVarianteOut,
+           CategoriaOut, TemporadaOut, ColeccionOut, ColorOut, TallaOut, ProveedorOut
+  CONTROL  (backend/app/api/v1/endpoints/catalogo.py): list_productos(),
+           get_producto(), list_categorias(), list_tallas(), list_colores(),
+           list_temporadas(), list_colecciones(), list_proveedores()
+  ENTIDAD  (backend/app/models/catalogo.py): Producto, ProductoVariante,
+           Categoria, Temporada, Coleccion, Color, Talla, Proveedor
+  FLUJO:
+    1: Usuario -> Interfaz: GET /catalogo/productos
+    2: Interfaz -> Control: list_productos()
+    3: Control -> Entidad: consultar productos (con variantes, categoria, temporada)
+    4: Entidad -> Control: lista de productos
+    5: Control -> Interfaz: list[ProductoOut]
+    6: Interfaz -> Usuario: catalogo
+
+CU5 - FILTRAR PRODUCTOS (Actor: Usuario) - POR TALLA, COLOR, CATEGORIA, TEMPORADA
+  INTERFAZ (backend/app/schemas/comercio.py): ProductoOut
+  CONTROL  (backend/app/api/v1/endpoints/catalogo.py): list_productos()
+           Filtros: categoria_id, temporada_id, talla_id, color_id,
+                    proveedor_id, precio_min, precio_max, q
+  ENTIDAD  (backend/app/models/catalogo.py): Producto, ProductoVariante,
+           Categoria, Temporada, Color, Talla
+  FLUJO:
+    1: Usuario -> Interfaz: GET /catalogo/productos?talla_id=&color_id=&categoria_id=&temporada_id=
+    2: Interfaz -> Control: list_productos(filtros)
+    3: Control -> Entidad: join Producto x ProductoVariante con filtros
+    4: Entidad -> Control: productos filtrados
+    5: Control -> Interfaz: list[ProductoOut]
+    6: Interfaz -> Usuario: resultados filtrados
+
+CU6 - CONSULTAR DISPONIBILIDAD POR SUCURSAL (Actor: Usuario autenticado)
+  INTERFAZ (backend/app/schemas/comercio.py): SucursalDisponibilidadOut
+  CONTROL  (backend/app/api/v1/endpoints/inventario.py): disponibilidad()
+           (backend/app/core/dependencies.py): get_current_user
+  ENTIDAD  (backend/app/models/inventario.py): Inventario
+           (backend/app/models/ubicacion.py): Sucursal, Ciudad
+           (backend/app/models/catalogo.py): ProductoVariante
+  FLUJO:
+    1: Usuario -> Interfaz: GET /inventario/disponibilidad?variante_id=
+    2: Interfaz -> Control: disponibilidad(variante_id, sucursal_id, ciudad_id)
+    3: Control -> Entidad: Inventario JOIN Sucursal(activas) JOIN Ciudad
+    4: Entidad -> Control: registros de existencia
+    5: Control -> Interfaz: list[SucursalDisponibilidadOut]
+    6: Interfaz -> Usuario: disponibilidad por sucursal
+
+CU8 - REALIZAR RESERVA DE MULTIPLES PRENDAS (Actor: Cliente)
+  INTERFAZ (backend/app/schemas/comercio.py): ReservaCreate, ReservaItemCreate,
+           ReservaOut
+  CONTROL  (backend/app/api/v1/endpoints/reservas.py): crear_reserva()
+  ENTIDAD  (backend/app/models/ventas.py): Reserva, ReservaItem
+           (backend/app/models/inventario.py): Inventario
+           (backend/app/models/ubicacion.py): Sucursal
+           (backend/app/models/usuario.py): Usuario
+  FLUJO:
+    1: Cliente -> Interfaz: ReservaCreate(sucursal_id, fecha_reserva, hora_atencion, items)
+    2: Interfaz -> Control: crear_reserva(data)
+    3: Control -> Entidad: validar Sucursal activa y horario de atencion
+    4: Control -> Entidad: verificar stock (Inventario con SELECT FOR UPDATE)
+    5: Control -> Entidad: crear Reserva + ReservaItem(s)
+    6: Entidad -> Control: ReservaOut (id_reserva, estado = pendiente)
+    7: Control -> Interfaz: HTTP 201 + ReservaOut
+    8: Interfaz -> Cliente: numero de reserva creado
+
+CU9 - CONSULTAR Y CANCELAR RESERVAS (Actor: Cliente / Encargado)
+  INTERFAZ (backend/app/schemas/comercio.py): ReservaOut
+  CONTROL  (backend/app/api/v1/endpoints/reservas.py): list_reservas(),
+           get_reserva(), cancelar_reserva(), list_reservas_pendientes()
+           (backend/app/core/dependencies.py): get_current_user
+  ENTIDAD  (backend/app/models/ventas.py): Reserva, ReservaItem
+           (backend/app/models/catalogo.py): ProductoVariante
+  FLUJO:
+    1: Cliente -> Interfaz: GET /reservas/
+    2: Interfaz -> Control: list_reservas() (filtra por cliente o sucursal del encargado)
+    3: Control -> Entidad: consultar Reserva + items
+    4: Entidad -> Control: list[ReservaOut]
+   1.1: Cliente -> Interfaz: PATCH /reservas/{id}/cancelar
+   1.2: Interfaz -> Control: cancelar_reserva(id)
+   1.3: Control -> Entidad: estado = cancelada (el trigger libera stock)
+   1.4: Entidad -> Control: ReservaOut(cancelada)
+   1.5: Control -> Interfaz: HTTP 200 + ReservaOut
+
+CU18 - PREPARAR RESERVAS - ENCARGADO (Actor: Encargado)
+  INTERFAZ (backend/app/schemas/comercio.py): ReservaOut
+  CONTROL  (backend/app/api/v1/endpoints/reservas.py): list_reservas_pendientes(),
+           preparar_reserva(), completar_reserva()
+           (backend/app/services/notification_service.py):
+           enviar_notificacion_reserva_preparada()
+           (backend/app/core/dependencies.py): encargado_required
+  ENTIDAD  (backend/app/models/ventas.py): Reserva, ReservaItem
+           (backend/app/models/usuario.py): Usuario
+           (backend/app/models/ubicacion.py): Sucursal
+  FLUJO:
+    1: Encargado -> Interfaz: GET /reservas/pendientes
+    2: Interfaz -> Control: list_reservas_pendientes()
+    3: Control -> Entidad: reservas pendientes de su sucursal
+   1.1: Encargado -> Interfaz: PATCH /reservas/{id}/preparar
+   1.2: Interfaz -> Control: preparar_reserva(id)
+   1.3: Control -> Entidad: estado = preparada
+   1.4: Control -> NotificationService: enviar_notificacion_reserva_preparada(email, id)
+   1.5: Entidad -> Control: ReservaOut(preparada)
+   1.6: Control -> Interfaz: HTTP 200 + ReservaOut
+
+CU19 - ADMINISTRAR USUARIOS Y ROLES - CRUD (Actor: Administrador)
+  INTERFAZ (backend/app/schemas/usuario.py): UsuarioAdminCreate,
+           UsuarioAdminUpdate, UsuarioOut
+  CONTROL  (backend/app/api/v1/endpoints/usuarios.py): CRUD completo:
+           CREATE: create_usuario()
+           READ:   list_usuarios(), get_usuario()
+           UPDATE: update_usuario()
+           DELETE: desactivar (activar/desactivar via update_usuario con activo=false)
+           Apoyo: _validar_sucursal(), _tiene_operaciones_activas()
+           (backend/app/core/dependencies.py): admin_required
+           (backend/app/core/security.py): hash_password()
+  ENTIDAD  (backend/app/models/usuario.py): Usuario
+           (backend/app/models/ubicacion.py): Sucursal
+           (backend/app/models/ventas.py): Reserva, Pedido (validacion de operaciones activas)
+  FLUJO:
+    1: Admin -> Interfaz: GET /usuarios/
+    2: Interfaz -> Control: list_usuarios(rol?)
+    3: Control -> Entidad: consultar usuarios
+   1.1: Admin -> Interfaz: POST /usuarios/  -> UsuarioAdminCreate(nombre, email, rol, sucursal_id)
+   1.2: Interfaz -> Control: create_usuario(data)
+   1.3: Control -> Entidad: validar Sucursal
+   1.4: Control -> Entidad: crear Usuario (hash_password)
+   1.5: Admin -> Interfaz: GET /usuarios/{id}
+   1.6: Interfaz -> Control: get_usuario(id)
+   1.7: Admin -> Interfaz: PATCH /usuarios/{id} -> UsuarioAdminUpdate(rol, activo, sucursal)
+   1.8: Interfaz -> Control: update_usuario(id, data, forzar)
+   1.9: Control -> Entidad: validar operaciones activas (Reserva/Pedido)
+   1.10: Control -> Entidad: actualizar atributos / desactivar (activo=false)
+   1.11: Entidad -> Control: UsuarioOut
+   1.12: Control -> Interfaz: HTTP 200 + UsuarioOut
+
+CU20 - ADMINISTRAR SUCURSALES - CRUD (Actor: Administrador)
+  INTERFAZ (backend/app/schemas/comercio.py): SucursalCreate, SucursalUpdate,
+           SucursalOut, CiudadOut
+  CONTROL  (backend/app/api/v1/endpoints/sucursales.py): CRUD completo:
+           READ:   list_ciudades(), list_sucursales(), get_sucursal()
+           CREATE: create_sucursal()
+           UPDATE: update_sucursal()
+           DELETE: desactivar_sucursal() (activo=false)
+           Apoyo: _sucursal_o_404(), _ciudad_o_404(), _nombre_disponible()
+           (backend/app/core/dependencies.py): admin_required
+  ENTIDAD  (backend/app/models/ubicacion.py): Sucursal, Ciudad
+           (backend/app/models/inventario.py): Inventario
+           (backend/app/models/ventas.py): Reserva
+  FLUJO:
+    1: Admin -> Interfaz: GET /sucursales/ (todas=true)
+    2: Interfaz -> Control: list_sucursales()
+    3: Control -> Entidad: consultar Sucursal + Ciudad
+   1.1: Admin -> Interfaz: POST /sucursales/ -> SucursalCreate(ciudad_id, nombre, direccion, horarios)
+   1.2: Interfaz -> Control: create_sucursal(data)
+   1.3: Control -> Entidad: validar Ciudad + nombre unico
+   1.4: Control -> Entidad: crear Sucursal
+   1.5: Admin -> Interfaz: PATCH /sucursales/{id} -> SucursalUpdate(...)
+   1.6: Interfaz -> Control: update_sucursal(id, data)
+   1.7: Control -> Entidad: actualizar Sucursal
+   1.8: Admin -> Interfaz: DELETE /sucursales/{id}
+   1.9: Interfaz -> Control: desactivar_sucursal(id, forzar)
+   1.10: Control -> Entidad: validar Inventario/Reservas activas
+   1.11: Control -> Entidad: activo = false
+
+CU21 - ADMINISTRAR CATALOGO DE PRODUCTOS - CRUD (Actor: Administrador)
+  INTERFAZ (backend/app/schemas/comercio.py): ProductoCreate, ProductoUpdate,
+           ProductoVarianteCreate, ProductoOut, ProductoVarianteOut,
+           CategoriaOut, ColorOut, TallaOut, TemporadaOut, ColeccionOut, ProveedorOut
+  CONTROL  (backend/app/api/v1/endpoints/catalogo.py): CRUD completo:
+           CREATE: create_producto(), create_variante()
+           READ:   list_productos(todas=true), get_producto(),
+                   list_categorias(), list_tallas(), list_colores(),
+                   list_temporadas(), list_colecciones(), list_proveedores()
+           UPDATE: update_producto() (incluye activar/desactivar con forzar)
+           DELETE: delete_variante()
+           Apoyo: _maestro_o_404(), _producto_cargado(), _tiene_operaciones_activas()
+           (backend/app/core/dependencies.py): admin_required
+  ENTIDAD  (backend/app/models/catalogo.py): Producto, ProductoVariante,
+           Categoria, Color, Talla, Temporada, Coleccion, Proveedor
+           (backend/app/models/inventario.py): Inventario, MovimientoInventario
+           (backend/app/models/ventas.py): Pedido, PedidoItem (validacion de operaciones activas)
+  FLUJO:
+    1: Admin -> Interfaz: POST /catalogo/productos -> ProductoCreate(nombre, precio, categoria_id, temporada_id, proveedor_id)
+    2: Interfaz -> Control: create_producto(data)
+    3: Control -> Entidad: validar Categoria/Temporada/Proveedor/Coleccion
+    4: Control -> Entidad: crear Producto
+   1.1: Admin -> Interfaz: POST /catalogo/productos/variantes -> ProductoVarianteCreate(producto_id, color_id, talla_id, sku)
+   1.2: Interfaz -> Control: create_variante(data)
+   1.3: Control -> Entidad: validar Color/Talla + SKU unico
+   1.4: Control -> Entidad: crear ProductoVariante
+   1.5: Admin -> Interfaz: GET /catalogo/productos (todas=true)
+   1.6: Interfaz -> Control: list_productos(todas=true)
+   1.7: Admin -> Interfaz: GET /catalogo/productos/{id}
+   1.8: Interfaz -> Control: get_producto(id)
+   1.9: Admin -> Interfaz: PATCH /catalogo/productos/{id} -> ProductoUpdate(...)
+   1.10: Interfaz -> Control: update_producto(id, data, forzar)
+   1.11: Control -> Entidad: validar operaciones activas antes de desactivar
+   1.12: Control -> Entidad: actualizar Producto / activo=false
+   1.13: Admin -> Interfaz: DELETE /catalogo/productos/variantes/{id}
+   1.14: Interfaz -> Control: delete_variante(id)
+   1.15: Control -> Entidad: verificar Inventario/Movimientos asociados
+   1.16: Control -> Entidad: eliminar variante
+
+--------------------------------------------------------------------------------
+4) RESUMEN DE CARPETAS (para rotular cada clase en el diagrama)
+--------------------------------------------------------------------------------
+- Clase INTERFAZ  -> backend/app/schemas/
+- Clase CONTROL   -> backend/app/api/v1/endpoints/
+- Clase ENTIDAD   -> backend/app/models/
+Clases de apoyo: backend/app/core/ (security, dependencies)
+                 backend/app/services/ (notification_service)
+
+================================================================================
+FIN DEL PROMPT
+================================================================================

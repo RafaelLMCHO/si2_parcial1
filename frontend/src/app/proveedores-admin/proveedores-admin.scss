@@ -1,0 +1,8 @@
+.prov-container { max-width: 1180px; margin: 32px auto; padding: 0 16px; }
+.prov-card { padding: 8px 16px 16px; }
+.prov-toolbar { display: flex; justify-content: flex-end; margin: 12px 0 16px; }
+.prov-form { display: flex; flex-direction: column; gap: 4px; margin-bottom: 24px; padding: 16px; border: 1px solid rgba(0,0,0,.12); border-radius: 8px; }
+.prov-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.prov-row mat-form-field, .prov-table { width: 100%; }
+.actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 12px; }
+.vacio { text-align: center; color: rgba(0,0,0,.55); padding: 24px; }.error-msg { display:block; margin-top:8px; }

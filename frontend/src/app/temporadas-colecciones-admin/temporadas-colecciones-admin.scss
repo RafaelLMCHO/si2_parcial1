@@ -1,0 +1,11 @@
+.tc-container { max-width: 1180px; margin: 32px auto; padding: 0 16px; }
+.tc-card { padding: 8px 16px 16px; }
+.tc-seccion { margin-top: 16px; }
+.tc-toolbar { display: flex; justify-content: flex-end; margin: 12px 0 16px; }
+.tc-form { display: flex; flex-direction: column; gap: 4px; margin-bottom: 24px; padding: 16px; border: 1px solid rgba(0,0,0,.12); border-radius: 8px; }
+.tc-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.tc-row mat-form-field, .tc-table { width: 100%; }
+.actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 12px; }
+.chip { padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+.chip-ok { background: #e6f4ea; color: #1e8e3e; }.chip-off { background: #fce8e6; color: #d93025; }
+.vacio { text-align: center; color: rgba(0,0,0,.55); padding: 24px; }.error-msg { display:block; margin-top:8px; }

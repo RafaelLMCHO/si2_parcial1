@@ -1,0 +1,190 @@
+<app-navbar></app-navbar>
+
+<div class="page-container">
+  <div class="header-section">
+    <h1 class="page-title">
+      <mat-icon class="title-icon">payments</mat-icon>
+      Gestión de Pagos y Pasarela (CU-12)
+    </h1>
+    <p class="subtitle">Monitoreo transaccional, simulación de Stripe Sandbox y control de reembolsos</p>
+  </div>
+
+  <mat-tab-group animationDuration="200ms" class="pagos-tabs">
+    <!-- Pestaña 1: Transacciones y Reembolsos -->
+    <mat-tab label="Transacciones de Pago">
+      <div class="filters-bar">
+        <mat-form-field appearance="outline" dense>
+          <mat-label>Estado de pago</mat-label>
+          <mat-select [value]="estadoFiltro()" (selectionChange)="estadoFiltro.set($event.value); cargar()">
+            <mat-option value="todos">Todos los estados</mat-option>
+            <mat-option value="aprobado">Aprobado</mat-option>
+            <mat-option value="pendiente">Pendiente</mat-option>
+            <mat-option value="rechazado">Rechazado</mat-option>
+            <mat-option value="reembolsado">Reembolsado</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" dense>
+          <mat-label>Proveedor de pago</mat-label>
+          <mat-select [value]="proveedorFiltro()" (selectionChange)="proveedorFiltro.set($event.value); cargar()">
+            <mat-option value="todos">Todos los proveedores</mat-option>
+            <mat-option value="STRIPE">Stripe (Pasarela Digital)</mat-option>
+            <mat-option value="Punto de Venta">Punto de Venta (Caja)</mat-option>
+            <mat-option value="QR">QR / Transferencia</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <button mat-stroked-button color="primary" (click)="cargar()" class="btn-refresh">
+          <mat-icon>refresh</mat-icon> Actualizar
+        </button>
+      </div>
+
+      <div *ngIf="cargando()" class="spinner-box">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Cargando registros transaccionales...</p>
+      </div>
+
+      <div *ngIf="error()" class="error-box">
+        <mat-icon color="warn">error_outline</mat-icon>
+        <p>{{ error() }}</p>
+        <button mat-raised-button color="primary" (click)="cargar()">Reintentar</button>
+      </div>
+
+      <ng-container *ngIf="!cargando() && !error()">
+        <mat-card class="vacio-card" *ngIf="pagos().length === 0">
+          <mat-card-content>
+            <mat-icon class="vacio-icon">credit_card_off</mat-icon>
+            <p>No se encontraron transacciones con los filtros seleccionados.</p>
+          </mat-card-content>
+        </mat-card>
+
+        <div class="table-responsive" *ngIf="pagos().length > 0">
+          <table class="pagos-tabla">
+            <thead>
+              <tr>
+                <th>ID Pago</th>
+                <th>Pedido</th>
+                <th>Cliente</th>
+                <th>Sucursal</th>
+                <th>Proveedor</th>
+                <th>Transacción ID</th>
+                <th>Monto</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let p of pagos()">
+                <td><strong>#{{ p.id_pago }}</strong></td>
+                <td>#{{ p.pedido_id }}</td>
+                <td>
+                  <strong>{{ p.cliente_nombre }}</strong>
+                  <br />
+                  <small class="text-muted">{{ p.cliente_email }}</small>
+                </td>
+                <td>{{ p.sucursal_nombre }}</td>
+                <td>
+                  <span class="prov-badge" [ngClass]="p.proveedor_pago.toLowerCase().replace(' ', '-')">
+                    {{ p.proveedor_pago }}
+                  </span>
+                </td>
+                <td><code>{{ p.transaccion_id || '—' }}</code></td>
+                <td class="monto">{{ p.monto | currency: 'Bs.' : 'symbol' : '1.2-2' }}</td>
+                <td>{{ p.fecha_pago | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td>
+                  <span class="badge-estado" [ngClass]="p.estado.toLowerCase()">
+                    {{ p.estado | uppercase }}
+                  </span>
+                </td>
+                <td>
+                  <button
+                    *ngIf="p.estado === 'aprobado'"
+                    mat-stroked-button
+                    color="warn"
+                    dense
+                    [disabled]="reembolsandoId() === p.id_pago"
+                    (click)="reembolsar(p.id_pago)"
+                  >
+                    <mat-icon>{{ reembolsandoId() === p.id_pago ? 'hourglass_top' : 'undo' }}</mat-icon>
+                    Reembolsar
+                  </button>
+                  <span *ngIf="p.estado === 'reembolsado'" class="text-muted small">Anulado</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </ng-container>
+    </mat-tab>
+
+    <!-- Pestaña 2: Simulador Stripe Sandbox -->
+    <mat-tab label="Simulador Stripe Sandbox (Pruebas)">
+      <div class="sandbox-container">
+        <mat-card class="sandbox-card">
+          <mat-card-header>
+            <mat-card-title>Probador de Tarjetas de Prueba (Stripe Sandbox)</mat-card-title>
+            <mat-card-subtitle>Valida comportamientos de aprobación y rechazo de pasarela</mat-card-subtitle>
+          </mat-card-header>
+
+          <mat-card-content class="sandbox-content">
+            <div class="sandbox-form">
+              <mat-form-field appearance="outline">
+                <mat-label>Número de Tarjeta de Prueba</mat-label>
+                <input
+                  matInput
+                  [value]="testTarjeta()"
+                  (input)="testTarjeta.set(inputCard.value)"
+                  #inputCard
+                />
+                <mat-hint>Usar 4242... (Éxito) o 4000... (Rechazo)</mat-hint>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Monto a Simular (Bs.)</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  [value]="testMonto()"
+                  (input)="testMonto.set(+inputM.value)"
+                  #inputM
+                />
+              </mat-form-field>
+            </div>
+
+            <div class="presets-buttons">
+              <span>Tarjetas rápidas de test:</span>
+              <button mat-stroked-button (click)="testTarjeta.set('4242424242424242')">
+                ✅ Éxito (4242 4242...)
+              </button>
+              <button mat-stroked-button (click)="testTarjeta.set('4000000000000002')">
+                ❌ Rechazo (4000 0000...)
+              </button>
+            </div>
+
+            <div class="sandbox-actions">
+              <button
+                mat-raised-button
+                color="primary"
+                [disabled]="probandoPasarela()"
+                (click)="probarTarjetaSandbox()"
+              >
+                <mat-icon>{{ probandoPasarela() ? 'sync' : 'payment' }}</mat-icon>
+                {{ probandoPasarela() ? 'Simulando en Stripe...' : 'Probar Transacción' }}
+              </button>
+
+              <button mat-stroked-button color="accent" (click)="simularWebhookPrueba()">
+                <mat-icon>webhook</mat-icon> Simular Webhook de Confirmación
+              </button>
+            </div>
+
+            <div *ngIf="resultadoPrueba()" class="result-box" [ngClass]="{ exito: resultadoPrueba()!.exito, error: !resultadoPrueba()!.exito }">
+              <mat-icon>{{ resultadoPrueba()!.exito ? 'check_circle' : 'cancel' }}</mat-icon>
+              <span>{{ resultadoPrueba()!.mensaje }}</span>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</div>

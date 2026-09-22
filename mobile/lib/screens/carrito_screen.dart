@@ -4,9 +4,14 @@ import '../api/api_client.dart';
 import '../models/carrito.dart';
 import '../models/reserva.dart';
 import '../models/sucursal.dart';
+import '../models/venta.dart';
 import '../services/carrito_service.dart';
 import '../services/reserva_service.dart';
 import '../services/sucursal_service.dart';
+import '../services/ventas_service.dart';
+import 'pasarela_pago_screen.dart';
+
+enum _ModoCheckout { reserva, compra }
 
 class CarritoScreen extends StatefulWidget {
   const CarritoScreen({super.key});
@@ -27,6 +32,10 @@ class _CarritoScreenState extends State<CarritoScreen> {
   TimeOfDay? _hora;
   bool _cargando = false;
   String? _error;
+
+  _ModoCheckout _modo = _ModoCheckout.reserva;
+  bool _procesando = false;
+  int? _pedidoId;
 
   Reserva? _resultado;
 
@@ -149,6 +158,8 @@ class _CarritoScreenState extends State<CarritoScreen> {
   Widget build(BuildContext context) {
     final resultado = _resultado;
     if (resultado != null) return _vistaExito(resultado);
+    final pedidoId = _pedidoId;
+    if (pedidoId != null) return _vistaExitoCompra(pedidoId);
     return Scaffold(
       appBar: AppBar(title: const Text('Carrito de reservas')),
       body: _carrito.vacio ? _vistaVacia() : _contenido(),
@@ -227,13 +238,35 @@ class _CarritoScreenState extends State<CarritoScreen> {
       padding: const EdgeInsets.all(16),
       children: [
         Text(
-          '${_carrito.totalPrendas} prenda(s) a reservar',
+          _modo == _ModoCheckout.compra
+              ? '${_carrito.totalPrendas} prenda(s) a comprar'
+              : '${_carrito.totalPrendas} prenda(s) a reservar',
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 8),
         for (final item in _carrito.items) _filaItem(item),
         const SizedBox(height: 16),
-        _cardDetalle(),
+        SegmentedButton<_ModoCheckout>(
+          segments: const [
+            ButtonSegment(
+              value: _ModoCheckout.reserva,
+              icon: Icon(Icons.storefront),
+              label: Text('Probar en tienda'),
+            ),
+            ButtonSegment(
+              value: _ModoCheckout.compra,
+              icon: Icon(Icons.local_shipping),
+              label: Text('Comprar ahora (Digital)'),
+            ),
+          ],
+          selected: {_modo},
+          onSelectionChanged: (s) => setState(() {
+            _modo = s.first;
+            _error = null;
+          }),
+        ),
+        const SizedBox(height: 16),
+        if (_modo == _ModoCheckout.reserva) _cardDetalle() else _cardCompra(),
       ],
     );
   }
@@ -432,6 +465,200 @@ class _CarritoScreenState extends State<CarritoScreen> {
         ),
       ),
     );
+  }
+
+  Widget _vistaExitoCompra(int pedidoId) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Compra digital'),
+        automaticallyImplyLeading: false,
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.check_circle, color: Colors.green.shade600, size: 64),
+              const SizedBox(height: 16),
+              Text(
+                '¡Compra digital exitosa!',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 4),
+              const Text('Recibirás un correo con el comprobante.'),
+              const SizedBox(height: 16),
+              Text(
+                'Número de pedido: #$pedidoId',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+              const SizedBox(height: 24),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Seguir explorando'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _cardCompra() {
+    double total = 0;
+    for (final item in _carrito.items) {
+      total += item.precio * item.cantidad;
+    }
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Resumen de la compra digital',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Al confirmar verificaremos el stock y se abrirá la pasarela de pago segura.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Subtotal'),
+                Text('Bs. ${total.toStringAsFixed(2)}'),
+              ],
+            ),
+            const SizedBox(height: 4),
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Envío'),
+                Text('Gratis (Promoción)'),
+              ],
+            ),
+            const Divider(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Total a pagar',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                Text(
+                  'Bs. ${total.toStringAsFixed(2)}',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ],
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.errorContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  _error!,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onErrorContainer,
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _procesando ? null : _procederPago,
+                icon: _procesando
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.shopping_bag),
+                label: Text(_procesando ? 'Verificando...' : 'Proceder al pago'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _procederPago() async {
+    setState(() {
+      _error = null;
+      _procesando = true;
+    });
+    final items = List.of(_carrito.items);
+    try {
+      final compra = CompraDigitalCreate(
+        sucursalId: 1,
+        pasarela: 'stripe',
+        items: [
+          for (final i in items)
+            CompraItemCreate(varianteId: i.varianteId, cantidad: i.cantidad),
+        ],
+      );
+      final sesion = await VentasService.crearCheckout(
+        compra,
+        returnUrl: 'fashionstore://pago/confirmacion',
+      );
+      final cfg = await VentasService.configPublica();
+      if (!mounted) return;
+
+      if (!sesion.simulado && sesion.checkoutUrl != null) {
+        // Pasarela real: abrir el Checkout alojado de Stripe en el navegador.
+        await launchUrl(
+          Uri.parse(sesion.checkoutUrl!),
+          mode: LaunchMode.externalApplication,
+        );
+        await _carrito.limpiar();
+        if (!mounted) return;
+        // Al volver de Stripe, el deep link dispara la confirmación; aquí
+        // descartamos el carrito y pasamos al historial.
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => CarritoScreen(),
+          ),
+        );
+        return;
+      }
+
+      final res = await Navigator.of(context).push<CompraConfirmada>(
+        MaterialPageRoute(
+          builder: (_) => PasarelaPagoScreen(
+            intencion: intencion,
+            publishableKey: cfg.stripePublishableKey,
+            pasarelaSimulada: cfg.pasarelaSimulada,
+            compra: compra,
+          ),
+        ),
+      );
+      if (!mounted) return;
+      if (res != null) {
+        await _carrito.limpiar();
+        setState(() {
+          _procesando = false;
+          _pedidoId = res.idPedido;
+        });
+      } else {
+        setState(() => _procesando = false);
+      }
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _procesando = false;
+        _error = e.message;
+      });
+    }
   }
 }
 

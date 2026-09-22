@@ -1,0 +1,354 @@
+.pos-container {
+  padding: 16px 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.pos-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+
+  .header-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    h1 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin: 0;
+      color: #0f172a;
+
+      .pos-icon {
+        font-size: 2rem;
+        width: 2rem;
+        height: 2rem;
+        color: #4f46e5;
+      }
+    }
+
+    .sucursal-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background-color: #e0e7ff;
+      color: #3730a3;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 0.85rem;
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+    }
+  }
+}
+
+.pos-layout {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 20px;
+}
+
+.catalogo-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  .search-input {
+    width: 100%;
+  }
+
+  .clickable-icon {
+    cursor: pointer;
+  }
+
+  .productos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+  }
+
+  .prod-card {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+
+    .prod-img {
+      width: 100%;
+      height: 140px;
+      object-fit: cover;
+    }
+
+    .prod-details {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+
+      .prod-title {
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: #1e293b;
+      }
+
+      .prod-precio {
+        font-weight: 700;
+        color: #4f46e5;
+        font-size: 1.05rem;
+      }
+
+      .variantes-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 6px;
+
+        .btn-variante {
+          font-size: 0.75rem;
+          padding: 0 8px;
+          height: 28px;
+          line-height: 28px;
+        }
+      }
+    }
+  }
+
+  .spinner-box {
+    display: flex;
+    justify-content: center;
+    padding: 60px;
+  }
+}
+
+.ticket-pane {
+  .ticket-card {
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+
+    .ticket-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px;
+    }
+
+    .ticket-items {
+      max-height: 350px;
+      overflow-y: auto;
+      padding: 12px 16px;
+    }
+
+    .ticket-vacio {
+      text-align: center;
+      padding: 40px 16px;
+      color: #94a3b8;
+
+      mat-icon {
+        font-size: 48px;
+        width: 48px;
+        height: 48px;
+        margin-bottom: 8px;
+      }
+
+      p {
+        margin: 0;
+        font-size: 0.9rem;
+      }
+    }
+
+    .ticket-item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px dashed #e2e8f0;
+
+      .item-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+
+        .item-name {
+          font-size: 0.9rem;
+          color: #0f172a;
+        }
+        .item-specs {
+          font-size: 0.75rem;
+          color: #64748b;
+        }
+        .item-price {
+          font-weight: 600;
+          font-size: 0.85rem;
+          color: #334155;
+        }
+      }
+
+      .item-qty-actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+
+        .qty-num {
+          font-weight: 700;
+          font-size: 0.95rem;
+          min-width: 20px;
+          text-align: center;
+        }
+      }
+    }
+
+    .pago-box {
+      padding: 16px;
+
+      .total-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 16px;
+
+        span {
+          font-size: 1rem;
+          font-weight: 700;
+          color: #1e293b;
+        }
+
+        .total-monto {
+          font-size: 1.5rem;
+          font-weight: 800;
+          color: #4f46e5;
+        }
+      }
+
+      .pago-title {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #64748b;
+        margin-bottom: 8px;
+      }
+
+      .pago-radio-group {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+
+      .efectivo-calc {
+        background: #f8fafc;
+        padding: 12px;
+        border-radius: 8px;
+
+        .input-entregado {
+          width: 100%;
+          margin-bottom: 8px;
+        }
+
+        .cambio-box {
+          display: flex;
+          justify-content: space-between;
+          font-size: 0.9rem;
+          color: #475569;
+
+          &.ok {
+            color: #16a34a;
+            font-weight: 700;
+          }
+        }
+      }
+
+      .error-msg {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #ef4444;
+        font-size: 0.85rem;
+        margin-top: 12px;
+      }
+    }
+
+    .ticket-actions {
+      padding: 16px;
+
+      .btn-cobrar {
+        width: 100%;
+        padding: 12px;
+        font-size: 1.05rem;
+        font-weight: 700;
+      }
+    }
+  }
+}
+
+.comprobante-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+
+  .comprobante-card {
+    width: 450px;
+    max-width: 90vw;
+    border-radius: 12px;
+
+    .comprobante-body {
+      padding: 16px;
+
+      .ticket-meta {
+        font-size: 0.85rem;
+        color: #334155;
+        p {
+          margin: 4px 0;
+        }
+      }
+
+      .comprobante-tabla {
+        width: 100%;
+        margin: 16px 0;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+
+        th, td {
+          padding: 6px;
+          text-align: left;
+        }
+
+        th {
+          border-bottom: 1px solid #cbd5e1;
+        }
+      }
+
+      .comprobante-total {
+        display: flex;
+        justify-content: space-between;
+        font-size: 1.1rem;
+        font-weight: 800;
+        margin-top: 12px;
+        color: #0f172a;
+      }
+    }
+
+    .comprobante-actions {
+      display: flex;
+      justify-content: space-between;
+      padding: 16px;
+    }
+  }
+}

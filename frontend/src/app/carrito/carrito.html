@@ -9,9 +9,18 @@
   <mat-card class="exito" *ngIf="resultado()">
     <mat-card-content>
       <mat-icon color="primary" class="exito-icon">check_circle</mat-icon>
-      <h2>Reserva creada exitosamente, le esperamos en la tienda</h2>
-      <p>Número de reserva: <strong>#{{ resultado()!.id }}</strong></p>
-      <a mat-raised-button color="primary" routerLink="/catalogo">Seguir explorando</a>
+      <h2 *ngIf="resultado()!.tipo === 'reserva'">Reserva creada exitosamente, le esperamos en la tienda</h2>
+      <h2 *ngIf="resultado()!.tipo === 'compra'">¡Compra digital exitosa!</h2>
+      <p *ngIf="resultado()!.tipo === 'reserva'">Número de reserva: <strong>#{{ resultado()!.id }}</strong></p>
+      <p *ngIf="resultado()!.tipo === 'compra'">Número de pedido: <strong>#{{ resultado()!.id }}</strong>. Recibirás un correo con el comprobante.</p>
+      <div class="exito-actions" style="display: flex; gap: 12px; margin-top: 16px; justify-content: center;">
+        <a mat-raised-button color="primary" *ngIf="resultado()!.tipo === 'compra'" routerLink="/compras">
+          <mat-icon>receipt</mat-icon> Ver mis compras
+        </a>
+        <a mat-stroked-button color="primary" routerLink="/catalogo">
+          <mat-icon>storefront</mat-icon> Seguir explorando
+        </a>
+      </div>
     </mat-card-content>
   </mat-card>
 
@@ -65,12 +74,28 @@
 
       <mat-card class="detalle-card">
         <mat-card-header>
-          <mat-card-title>Dónde y cuándo</mat-card-title>
-          <mat-card-subtitle>
-            Elige la sucursal y el horario de atención. La disponibilidad se verificará al confirmar.
-          </mat-card-subtitle>
+          <mat-card-title>¿Cómo deseas obtener tus prendas?</mat-card-title>
         </mat-card-header>
-        <mat-card-content>
+        
+        <div class="modo-tabs">
+          <button 
+            mat-button 
+            [class.active]="modo() === 'reserva'" 
+            (click)="modo.set('reserva'); mostrarPago.set(false)"
+          >
+            <mat-icon>storefront</mat-icon> Probar en tienda (Reserva)
+          </button>
+          <button 
+            mat-button 
+            [class.active]="modo() === 'compra'" 
+            (click)="modo.set('compra')"
+          >
+            <mat-icon>local_shipping</mat-icon> Comprar ahora (Digital)
+          </button>
+        </div>
+
+        <mat-card-content *ngIf="modo() === 'reserva'">
+          <p class="subtitle">Elige la sucursal y el horario de atención para medirte las prendas.</p>
           <mat-form-field appearance="outline">
             <mat-label>Sucursal</mat-label>
             <mat-select [value]="sucursalSel()" (selectionChange)="sucursalSel.set($event.value)">
@@ -93,9 +118,46 @@
               <input matInput type="time" [value]="horaSel()" (input)="horaSel.set(inputHora.value)" #inputHora />
             </mat-form-field>
           </div>
+        </mat-card-content>
 
+        <mat-card-content *ngIf="modo() === 'compra' && !mostrarPago()">
+          <p class="subtitle">Al confirmar, verificaremos el stock y te redirigiremos a la pasarela de pago segura.</p>
+          <div class="resumen-compra">
+            <p><strong>Subtotal:</strong> {{ totalPrecio() | currency: 'Bs.' : 'symbol' : '1.2-2' }}</p>
+            <p><strong>Envío:</strong> Gratis (Promoción)</p>
+            <h3><strong>Total a pagar:</strong> {{ totalPrecio() | currency: 'Bs.' : 'symbol' : '1.2-2' }}</h3>
+          </div>
+        </mat-card-content>
+
+        <mat-card-content *ngIf="modo() === 'compra' && mostrarPago()" class="pago-simulado-box">
+          <h3>Pasarela de Pago (Stripe Sandbox)</h3>
+          <p>Introduce los datos de tu tarjeta para completar la compra.</p>
+          
+          <mat-form-field appearance="outline">
+            <mat-label>Número de Tarjeta</mat-label>
+            <input matInput placeholder="4242 4242 4242 4242" value="4242 4242 4242 4242" disabled />
+            <mat-icon matSuffix>credit_card</mat-icon>
+          </mat-form-field>
+          
+          <div class="duo">
+            <mat-form-field appearance="outline">
+              <mat-label>MM/AA</mat-label>
+              <input matInput placeholder="12/26" value="12/26" disabled />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>CVC</mat-label>
+              <input matInput placeholder="123" value="123" disabled />
+            </mat-form-field>
+          </div>
+
+          <button mat-raised-button color="accent" class="btn-pagar" [disabled]="pagando()" (click)="procesarPagoSimulado()">
+            <mat-icon>{{ pagando() ? 'sync' : 'payment' }}</mat-icon>
+            {{ pagando() ? 'Procesando pago...' : 'Pagar ' + (totalPrecio() | currency: 'Bs.' : 'symbol' : '1.2-2') }}
+          </button>
+        </mat-card-content>
+
+        <mat-card-actions *ngIf="!mostrarPago()">
           <mat-error *ngIf="error()" class="error-box">{{ error() }}</mat-error>
-
           <button
             mat-raised-button
             color="primary"
@@ -103,10 +165,10 @@
             [disabled]="cargando()"
             (click)="confirmar()"
           >
-            <mat-icon>{{ cargando() ? 'hourglass_top' : 'event_available' }}</mat-icon>
-            {{ cargando() ? 'Confirmando...' : 'Confirmar reserva' }}
+            <mat-icon>{{ cargando() ? 'hourglass_top' : (modo() === 'reserva' ? 'event_available' : 'shopping_bag') }}</mat-icon>
+            {{ cargando() ? 'Verificando...' : (modo() === 'reserva' ? 'Confirmar reserva' : 'Proceder al pago') }}
           </button>
-        </mat-card-content>
+        </mat-card-actions>
       </mat-card>
     </ng-container>
   </ng-container>

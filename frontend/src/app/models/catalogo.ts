@@ -24,8 +24,22 @@ export interface Proveedor {
   direccion?: string | null;
 }
 
+export interface ProveedorForm {
+  nombre: string;
+  contacto?: string | null;
+  telefono?: string | null;
+  email?: string | null;
+  direccion?: string | null;
+}
+
 export interface Temporada {
   id_temporada: number;
+  nombre: string;
+  fecha_inicio: string;
+  fecha_fin: string;
+}
+
+export interface TemporadaForm {
   nombre: string;
   fecha_inicio: string;
   fecha_fin: string;
@@ -37,6 +51,13 @@ export interface Coleccion {
   nombre: string;
   descripcion?: string | null;
   es_promocional: boolean;
+}
+
+export interface ColeccionForm {
+  temporada_id: number;
+  nombre: string;
+  descripcion?: string | null;
+  es_promocional?: boolean;
 }
 
 export interface ProductoVariante {

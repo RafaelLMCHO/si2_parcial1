@@ -86,9 +86,21 @@
         </button>
       </ng-container>
 
+      <!-- Botón de Pago Digital para el Cliente (CU-10) -->
+      <button
+        *ngIf="esCliente() && puedeCancelar(r)"
+        mat-raised-button
+        color="primary"
+        [disabled]="pagandoId() !== null"
+        (click)="pagar(r.id_reserva)"
+      >
+        <mat-icon>{{ pagandoId() === r.id_reserva ? 'hourglass_top' : 'payment' }}</mat-icon>
+        {{ pagandoId() === r.id_reserva ? 'Procesando pago...' : 'Pagar ahora (Compra Digital)' }}
+      </button>
+
       <button
         *ngIf="puedeCancelar(r)"
-        mat-raised-button
+        mat-stroked-button
         color="warn"
         [disabled]="cancelandoId() !== null"
         (click)="cancelar(r.id_reserva)"

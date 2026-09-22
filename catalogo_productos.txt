@@ -1,0 +1,23 @@
+CATALOGO DE PRODUCTOS - FASHIONSTORE
+====================================
+Total de productos: 18
+Fuente: database/02_poblacion.sql
+
+ 1. Camiseta Basica          - Bs 49.50  - Camisetas
+ 2. Pantalon Jeans           - Bs 149.00 - Pantalones
+ 3. Vestido Floral           - Bs 199.50 - Vestidos
+ 4. Abrigo Invierno          - Bs 349.00 - Abrigos
+ 5. Chompa Escolar           - Bs 89.00  - Camisetas
+ 6. Chaqueta de Cuero        - Bs 450.00 - Chaquetas
+ 7. Falda Plisada            - Bs 129.00 - Faldas
+ 8. Bufanda de Lana          - Bs 45.00  - Accesorios
+ 9. Camisa Formal            - Bs 119.00 - Camisetas
+10. Pantalon Chino           - Bs 139.00 - Pantalones
+11. Vestido de Noche         - Bs 289.00 - Vestidos
+12. Sweater Oversize         - Bs 159.00 - Abrigos
+13. Gorra Deportiva          - Bs 39.00  - Accesorios
+14. Blazer Mujer             - Bs 259.00 - Chaquetas
+15. Falda Jeans              - Bs 119.00 - Faldas
+16. Cinturon de Cuero        - Bs 69.00  - Accesorios
+17. Campera Jeans            - Bs 199.00 - Chaquetas
+18. Polo Deportivo           - Bs 119.00 - Camisetas

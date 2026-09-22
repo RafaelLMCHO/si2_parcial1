@@ -1,0 +1,41 @@
+<app-navbar></app-navbar>
+
+<div class="prov-container">
+  <mat-card class="prov-card">
+    <mat-card-header>
+      <mat-card-title>Gestión de proveedores</mat-card-title>
+      <mat-card-subtitle>Administra las fuentes de suministro del catálogo.</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="prov-toolbar"><button mat-raised-button color="primary" (click)="abrirNuevo()"><mat-icon>local_shipping</mat-icon> Nuevo proveedor</button></div>
+
+      <form *ngIf="modoFormulario()" [formGroup]="form" (ngSubmit)="guardar()" class="prov-form">
+        <div class="prov-row">
+          <mat-form-field appearance="outline"><mat-label>Nombre</mat-label><input matInput formControlName="nombre" /><mat-error>El nombre es obligatorio (mínimo 2 caracteres).</mat-error></mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>Contacto</mat-label><input matInput formControlName="contacto" /></mat-form-field>
+        </div>
+        <div class="prov-row">
+          <mat-form-field appearance="outline"><mat-label>Teléfono</mat-label><input matInput formControlName="telefono" /></mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>Email</mat-label><input matInput type="email" formControlName="email" /><mat-error>Ingresa un correo válido.</mat-error></mat-form-field>
+        </div>
+        <div class="prov-row">
+          <mat-form-field appearance="outline"><mat-label>Dirección</mat-label><input matInput formControlName="direccion" /></mat-form-field>
+        </div>
+        <div class="actions"><button mat-stroked-button type="button" (click)="cancelar()">Cancelar</button><button mat-raised-button color="primary" type="submit" [disabled]="cargando()">{{ editando() ? 'Guardar cambios' : 'Crear proveedor' }}</button></div>
+      </form>
+
+      <mat-error *ngIf="error()" class="error-msg">{{ error() }}</mat-error>
+
+      <table mat-table [dataSource]="proveedores()" class="prov-table">
+        <ng-container matColumnDef="nombre"><th mat-header-cell *matHeaderCellDef>Nombre</th><td mat-cell *matCellDef="let p">{{ p.nombre }}</td></ng-container>
+        <ng-container matColumnDef="contacto"><th mat-header-cell *matHeaderCellDef>Contacto</th><td mat-cell *matCellDef="let p">{{ p.contacto || '—' }}</td></ng-container>
+        <ng-container matColumnDef="telefono"><th mat-header-cell *matHeaderCellDef>Teléfono</th><td mat-cell *matCellDef="let p">{{ p.telefono || '—' }}</td></ng-container>
+        <ng-container matColumnDef="email"><th mat-header-cell *matHeaderCellDef>Email</th><td mat-cell *matCellDef="let p">{{ p.email || '—' }}</td></ng-container>
+        <ng-container matColumnDef="direccion"><th mat-header-cell *matHeaderCellDef>Dirección</th><td mat-cell *matCellDef="let p">{{ p.direccion || '—' }}</td></ng-container>
+        <ng-container matColumnDef="acciones"><th mat-header-cell *matHeaderCellDef>Acciones</th><td mat-cell *matCellDef="let p"><button mat-icon-button matTooltip="Editar" (click)="abrirEdicion(p)"><mat-icon>edit</mat-icon></button><button mat-icon-button color="warn" matTooltip="Desactivar" (click)="eliminar(p)"><mat-icon>delete</mat-icon></button></td></ng-container>
+        <tr mat-header-row *matHeaderRowDef="columnas"></tr><tr mat-row *matRowDef="let row; columns: columnas"></tr>
+      </table>
+      <div *ngIf="proveedores().length === 0" class="vacio">No hay proveedores registrados.</div>
+    </mat-card-content>
+  </mat-card>
+</div>

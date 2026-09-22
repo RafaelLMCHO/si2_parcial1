@@ -1,0 +1,72 @@
+<app-navbar></app-navbar>
+
+<div class="tc-container">
+  <mat-card class="tc-card">
+    <mat-card-header>
+      <mat-card-title>Gestión de temporadas y colecciones</mat-card-title>
+      <mat-card-subtitle>Administra los ciclos comerciales y colecciones del catálogo.</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <mat-card class="tc-seccion">
+        <mat-card-header>
+          <mat-card-title>Temporadas</mat-card-title>
+          <mat-card-subtitle>Primavera-Verano, Otoño-Invierno y fechas de vigencia.</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="tc-toolbar"><button mat-raised-button color="primary" (click)="abrirNuevaTemporada()"><mat-icon>event_repeat</mat-icon> Nueva temporada</button></div>
+
+          <form *ngIf="tempModo()" [formGroup]="temporadaForm" (ngSubmit)="guardarTemporada()" class="tc-form">
+            <div class="tc-row">
+              <mat-form-field appearance="outline"><mat-label>Nombre</mat-label><input matInput formControlName="nombre" /><mat-error>El nombre es obligatorio (mínimo 2 caracteres).</mat-error></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Fecha inicio</mat-label><input matInput type="date" formControlName="fecha_inicio" /><mat-error>La fecha de inicio es obligatoria.</mat-error></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Fecha fin</mat-label><input matInput type="date" formControlName="fecha_fin" /><mat-error>La fecha de fin es obligatoria.</mat-error></mat-form-field>
+            </div>
+            <mat-error *ngIf="temporadaForm.hasError('fechas')" class="error-msg">La fecha de inicio debe ser anterior a la fecha de fin.</mat-error>
+            <mat-error *ngIf="errorTemp()" class="error-msg">{{ errorTemp() }}</mat-error>
+            <div class="actions"><button mat-stroked-button type="button" (click)="cancelarTemporada()">Cancelar</button><button mat-raised-button color="primary" type="submit" [disabled]="cargando()">{{ tempEditando() ? 'Guardar cambios' : 'Crear temporada' }}</button></div>
+          </form>
+
+          <table mat-table [dataSource]="temporadas()" class="tc-table">
+            <ng-container matColumnDef="nombre"><th mat-header-cell *matHeaderCellDef>Nombre</th><td mat-cell *matCellDef="let t">{{ t.nombre }}</td></ng-container>
+            <ng-container matColumnDef="inicio"><th mat-header-cell *matHeaderCellDef>Fecha inicio</th><td mat-cell *matCellDef="let t">{{ t.fecha_inicio }}</td></ng-container>
+            <ng-container matColumnDef="fin"><th mat-header-cell *matHeaderCellDef>Fecha fin</th><td mat-cell *matCellDef="let t">{{ t.fecha_fin }}</td></ng-container>
+            <ng-container matColumnDef="acciones"><th mat-header-cell *matHeaderCellDef>Acciones</th><td mat-cell *matCellDef="let t"><button mat-icon-button matTooltip="Editar" (click)="abrirEdicionTemporada(t)"><mat-icon>edit</mat-icon></button><button mat-icon-button color="warn" matTooltip="Eliminar" (click)="eliminarTemporada(t)"><mat-icon>delete</mat-icon></button></td></ng-container>
+            <tr mat-header-row *matHeaderRowDef="colTemp"></tr><tr mat-row *matRowDef="let row; columns: colTemp"></tr>
+          </table>
+          <div *ngIf="temporadas().length === 0" class="vacio">No hay temporadas registradas.</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="tc-seccion">
+        <mat-card-header>
+          <mat-card-title>Colecciones</mat-card-title>
+          <mat-card-subtitle>Colecciones asociadas a temporadas, con opción promocional.</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="tc-toolbar"><button mat-raised-button color="primary" (click)="abrirNuevaColeccion()"><mat-icon>collections_bookmark</mat-icon> Nueva colección</button></div>
+
+          <form *ngIf="colModo()" [formGroup]="coleccionForm" (ngSubmit)="guardarColeccion()" class="tc-form">
+            <div class="tc-row">
+              <mat-form-field appearance="outline"><mat-label>Temporada</mat-label><mat-select formControlName="temporada_id"><mat-option *ngFor="let temporada of temporadas()" [value]="temporada.id_temporada">{{ temporada.nombre }}</mat-option></mat-select><mat-error>Selecciona una temporada.</mat-error></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Nombre</mat-label><input matInput formControlName="nombre" /><mat-error>El nombre es obligatorio (mínimo 2 caracteres).</mat-error></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Descripción</mat-label><input matInput formControlName="descripcion" /></mat-form-field>
+            </div>
+            <mat-checkbox formControlName="es_promocional">Colección promocional</mat-checkbox>
+            <mat-error *ngIf="errorCol()" class="error-msg">{{ errorCol() }}</mat-error>
+            <div class="actions"><button mat-stroked-button type="button" (click)="cancelarColeccion()">Cancelar</button><button mat-raised-button color="primary" type="submit" [disabled]="cargando()">{{ colEditando() ? 'Guardar cambios' : 'Crear colección' }}</button></div>
+          </form>
+
+          <table mat-table [dataSource]="colecciones()" class="tc-table">
+            <ng-container matColumnDef="nombre"><th mat-header-cell *matHeaderCellDef>Nombre</th><td mat-cell *matCellDef="let c">{{ c.nombre }}</td></ng-container>
+            <ng-container matColumnDef="temporada"><th mat-header-cell *matHeaderCellDef>Temporada</th><td mat-cell *matCellDef="let c">{{ nombreTemporada(c.temporada_id) }}</td></ng-container>
+            <ng-container matColumnDef="promocional"><th mat-header-cell *matHeaderCellDef>Promocional</th><td mat-cell *matCellDef="let c"><span class="chip" [class.chip-ok]="c.es_promocional" [class.chip-off]="!c.es_promocional">{{ c.es_promocional ? 'Sí' : 'No' }}</span></td></ng-container>
+            <ng-container matColumnDef="acciones"><th mat-header-cell *matHeaderCellDef>Acciones</th><td mat-cell *matCellDef="let c"><button mat-icon-button matTooltip="Editar" (click)="abrirEdicionColeccion(c)"><mat-icon>edit</mat-icon></button><button mat-icon-button color="warn" matTooltip="Eliminar" (click)="eliminarColeccion(c)"><mat-icon>delete</mat-icon></button></td></ng-container>
+            <tr mat-header-row *matHeaderRowDef="colCol"></tr><tr mat-row *matRowDef="let row; columns: colCol"></tr>
+          </table>
+          <div *ngIf="colecciones().length === 0" class="vacio">No hay colecciones registradas.</div>
+        </mat-card-content>
+      </mat-card>
+    </mat-card-content>
+  </mat-card>
+</div>

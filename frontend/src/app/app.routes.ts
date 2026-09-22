@@ -11,6 +11,13 @@ import { CatalogoAdminComponent } from './catalogo-admin/catalogo-admin';
 import { UsuariosAdminComponent } from './usuarios-admin/usuarios-admin';
 import { CarritoComponent } from './carrito/carrito';
 import { MisReservasComponent } from './reservas/mis-reservas';
+import { MisComprasComponent } from './compras/mis-compras';
+import { PagoConfirmacionComponent } from './pago-confirmacion/pago-confirmacion';
+import { PuntoVentaComponent } from './ventas/punto-venta';
+import { GestionPagosComponent } from './pagos/gestion-pagos';
+import { GestionInventarioComponent } from './inventario/gestion-inventario';
+import { ProveedoresAdminComponent } from './proveedores-admin/proveedores-admin';
+import { TemporadasColeccionesAdminComponent } from './temporadas-colecciones-admin/temporadas-colecciones-admin';
 import { PrepararReservasComponent } from './encargado/reservas/preparar-reservas/preparar-reservas';
 import { ReportesComponent } from './reportes/reportes';
 import { BitacoraComponent } from './bitacora/bitacora';
@@ -52,6 +59,11 @@ export const routes: Routes = [
     canActivate: [authGuard],
   },
   {
+    path: 'pago/confirmacion',
+    component: PagoConfirmacionComponent,
+    canActivate: [authGuard],
+  },
+  {
     path: 'gestion/productos',
     component: CatalogoAdminComponent,
     canActivate: [authGuard, adminGuard],
@@ -60,6 +72,26 @@ export const routes: Routes = [
     path: 'gestion/usuarios',
     component: UsuariosAdminComponent,
     canActivate: [authGuard, adminGuard],
+  },
+  {
+    path: 'gestion/proveedores',
+    component: ProveedoresAdminComponent,
+    canActivate: [authGuard, adminGuard],
+  },
+  {
+    path: 'gestion/temporadas',
+    component: TemporadasColeccionesAdminComponent,
+    canActivate: [authGuard, adminGuard],
+  },
+  {
+    path: 'gestion/pagos',
+    component: GestionPagosComponent,
+    canActivate: [authGuard],
+  },
+  {
+    path: 'gestion/inventario',
+    component: GestionInventarioComponent,
+    canActivate: [authGuard],
   },
   {
     path: 'sucursales',
@@ -72,18 +104,18 @@ export const routes: Routes = [
     canActivate: [authGuard, reservasRoleGuard],
   },
   {
+    path: 'compras',
+    component: MisComprasComponent,
+    canActivate: [authGuard],
+  },
+  {
     path: 'encargado/reservas/pendientes',
     component: PrepararReservasComponent,
     canActivate: [authGuard, encargadoGuard],
   },
   {
     path: 'ventas',
-    component: ProntoComponent,
-    data: {
-      titulo: 'Ventas / POS',
-      icon: 'point_of_sale',
-      desc: 'Registro de ventas presenciales y ventas en línea.',
-    },
+    component: PuntoVentaComponent,
     canActivate: [authGuard],
   },
   {

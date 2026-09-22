@@ -16,7 +16,7 @@ def hash_password(password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     try:
         return pwd_context.verify(plain_password, hashed_password)
-    except (ValueError, TypeError):
+    except Exception:
         # Los datos sembrados usan contraseñas en texto plano; comparación directa.
         return plain_password == hashed_password
 

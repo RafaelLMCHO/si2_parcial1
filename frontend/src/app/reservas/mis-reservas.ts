@@ -10,6 +10,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../core/auth.service';
 import { Reserva } from '../models/reservas';
 import { ReservaService } from '../services/reserva.service';
+import { VentasService } from '../services/ventas.service';
 import { NavbarComponent } from '../shared/navbar';
 
 const ESTADO_STYLE: Record<string, { label: string; color: string }> = {
@@ -37,6 +38,7 @@ const ESTADO_STYLE: Record<string, { label: string; color: string }> = {
 })
 export class MisReservasComponent implements OnInit {
   private reservasServ = inject(ReservaService);
+  private ventasServ = inject(VentasService);
   private auth = inject(AuthService);
   private snackbar = inject(MatSnackBar);
   private router = inject(Router);
@@ -46,6 +48,7 @@ export class MisReservasComponent implements OnInit {
   readonly error = signal<string | null>(null);
   readonly cancelandoId = signal<number | null>(null);
   readonly actualizandoId = signal<number | null>(null);
+  readonly pagandoId = signal<number | null>(null);
 
   readonly esCliente = computed(() => this.auth.usuario()?.rol === 'cliente');
   readonly esEncargado = computed(() => this.auth.usuario()?.rol === 'encargado');
@@ -145,6 +148,25 @@ export class MisReservasComponent implements OnInit {
         const detail = err?.error?.detail?.toString() ?? 'No se pudo completar la reserva';
         this.snackbar.open(detail, 'Cerrar', { duration: 5000 });
       }
+    });
+  }
+
+  pagar(id: number): void {
+    const ok = window.confirm(`¿Deseas pagar la reserva #${id} mediante la pasarela Stripe Sandbox y completarla como compra digital?`);
+    if (!ok) return;
+    this.pagandoId.set(id);
+    this.ventasServ.pagarReservaDigital(id).subscribe({
+      next: (res) => {
+        this.pagandoId.set(null);
+        this.snackbar.open(`¡Pago exitoso! Pedido #${res.id_pedido} registrado como COMPRA DIGITAL.`, 'Ver Compras', { duration: 6000 })
+          .onAction().subscribe(() => this.router.navigate(['/compras']));
+        this.cargar();
+      },
+      error: (err) => {
+        this.pagandoId.set(null);
+        const detail = err?.error?.detail?.toString() ?? 'No se pudo procesar el pago digital';
+        this.snackbar.open(detail, 'Cerrar', { duration: 5000 });
+      },
     });
   }
 }
