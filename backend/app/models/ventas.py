@@ -12,6 +12,7 @@ from sqlalchemy import (
     Enum as SAEnum,
     func,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -171,3 +172,24 @@ class Pago(Base):
     )
 
     pedido: Mapped["Pedido"] = relationship(back_populates="pagos")
+
+
+class CheckoutPendiente(Base):
+    """Carrito de una compra digital esperando el retorno de Stripe Checkout.
+
+    Se crea al generar la Checkout Session y se elimina cuando la compra se
+    confirma (o se vence/quedan obsoletas por un pagador que no regresó).
+    """
+
+    __tablename__ = "checkout_pendiente"
+
+    session_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    usuario_id: Mapped[int] = mapped_column(
+        ForeignKey("usuarios.id_usuario"), nullable=False
+    )
+    sucursal_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    items: Mapped[list] = mapped_column(JSONB, nullable=False)
+    monto: Mapped[object] = mapped_column(Numeric(10, 2), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )

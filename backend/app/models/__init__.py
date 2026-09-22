@@ -27,6 +27,7 @@ from app.models.ventas import (
     Pedido,
     PedidoItem,
     Pago,
+    CheckoutPendiente,
 )
 from app.models.bitacora import Bitacora
 
@@ -57,4 +58,5 @@ __all__ = [
     "Pedido",
     "PedidoItem",
     "Pago",
+    "CheckoutPendiente",
 ]

@@ -267,6 +267,16 @@ CREATE INDEX idx_pedidos_estado     ON pedidos(estado);
 CREATE INDEX idx_items_pedido       ON pedido_items(pedido_id);
 CREATE INDEX idx_pagos_pedido       ON pagos(pedido_id);
 
+-- Carritos de compra digital esperando el retorno de la pasarela (Stripe Checkout).
+CREATE TABLE checkout_pendiente (
+    session_id  VARCHAR(255)   PRIMARY KEY,
+    usuario_id  INTEGER        NOT NULL REFERENCES usuarios(id_usuario),
+    sucursal_id INTEGER        NOT NULL,
+    items       JSONB          NOT NULL,
+    monto       NUMERIC(10,2)  NOT NULL,
+    created_at  TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 -- ============================================================
 -- 3. ÍNDICES PARA BÚSQUEDA FRECUENTE (RNF02 - Rendimiento)
 -- ============================================================

@@ -1,10 +1,11 @@
 from datetime import date, datetime, time
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 from app.models.enums import (
     EstadoReserva,
     EstadoPedido,
     MetodoCompra,
+    TipoMovimiento,
     TipoPago,
 )
 from app.schemas.usuario import UsuarioOut
@@ -100,6 +101,34 @@ class TemporadaOut(BaseModel):
     fecha_fin: date
 
 
+class TemporadaCreate(BaseModel):
+    nombre: str = Field(min_length=2, max_length=100)
+    fecha_inicio: date
+    fecha_fin: date
+
+    @model_validator(mode="after")
+    def validar_fechas(self):
+        if self.fecha_inicio >= self.fecha_fin:
+            raise ValueError("fecha_inicio debe ser anterior a fecha_fin")
+        return self
+
+
+class TemporadaUpdate(BaseModel):
+    nombre: str | None = Field(default=None, min_length=2, max_length=100)
+    fecha_inicio: date | None = None
+    fecha_fin: date | None = None
+
+    @model_validator(mode="after")
+    def validar_fechas(self):
+        if (
+            self.fecha_inicio is not None
+            and self.fecha_fin is not None
+            and self.fecha_inicio >= self.fecha_fin
+        ):
+            raise ValueError("fecha_inicio debe ser anterior a fecha_fin")
+        return self
+
+
 class ColeccionOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id_coleccion: int
@@ -109,14 +138,43 @@ class ColeccionOut(BaseModel):
     es_promocional: bool
 
 
-class ProveedorOut(BaseModel):
+class ColeccionCreate(BaseModel):
+    temporada_id: int
+    nombre: str = Field(min_length=2, max_length=100)
+    descripcion: str | None = Field(default=None, max_length=255)
+    es_promocional: bool = False
+
+
+class ColeccionUpdate(BaseModel):
+    temporada_id: int | None = None
+    nombre: str | None = Field(default=None, min_length=2, max_length=100)
+    descripcion: str | None = Field(default=None, max_length=255)
+    es_promocional: bool | None = None
+
+
+class ProveedorBase(BaseModel):
+    nombre: str = Field(min_length=2, max_length=150)
+    contacto: str | None = Field(default=None, max_length=150)
+    telefono: str | None = Field(default=None, max_length=30)
+    email: EmailStr | None = Field(default=None, max_length=150)
+    direccion: str | None = Field(default=None, max_length=255)
+
+
+class ProveedorCreate(ProveedorBase):
+    pass
+
+
+class ProveedorUpdate(BaseModel):
+    nombre: str | None = Field(default=None, min_length=2, max_length=150)
+    contacto: str | None = Field(default=None, max_length=150)
+    telefono: str | None = Field(default=None, max_length=30)
+    email: str | None = Field(default=None, max_length=150)
+    direccion: str | None = Field(default=None, max_length=255)
+
+
+class ProveedorOut(ProveedorBase):
     model_config = ConfigDict(from_attributes=True)
     id_proveedor: int
-    nombre: str
-    contacto: str | None
-    telefono: str | None
-    email: str | None
-    direccion: str | None
 
 
 class ProductoBase(BaseModel):
@@ -187,6 +245,60 @@ class InventarioOut(BaseModel):
     cantidad_reservada: int
     cantidad_recibida: int
     stock_minimo: int
+
+
+class InventarioUpdate(BaseModel):
+    stock_minimo: int | None = Field(default=None, ge=0)
+
+
+class TransferenciaInventarioCreate(BaseModel):
+    variante_id: int
+    sucursal_origen_id: int
+    sucursal_destino_id: int
+    cantidad: int = Field(ge=1)
+    observacion: str | None = Field(default=None, max_length=255)
+
+
+class InventarioGlobalOut(BaseModel):
+    id_inventario: int
+    variante_id: int
+    sucursal_id: int
+    sucursal_nombre: str
+    producto_nombre: str
+    sku: str | None
+    talla: str | None
+    color: str | None
+    precio: float
+    cantidad_disponible: int
+    cantidad_reservada: int
+    cantidad_recibida: int
+    stock_minimo: int
+    stock_bajo: bool
+    imagen_url: str | None = None
+
+
+
+class MovimientoInventarioCreate(BaseModel):
+    variante_id: int
+    sucursal_id: int
+    tipo_movimiento: TipoMovimiento
+    cantidad: int = Field(ge=1)
+    referencia_id: int | None = None
+    observacion: str | None = Field(default=None, max_length=255)
+
+
+class MovimientoInventarioOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id_movimiento: int
+    variante_id: int
+    sucursal_id: int
+    tipo_movimiento: TipoMovimiento
+    cantidad: int
+    referencia_id: int | None
+    observacion: str | None
+    fecha_movimiento: datetime
+    variante: ProductoVarianteOut | None = None
+    sucursal: SucursalOut | None = None
 
 
 class SucursalDisponibilidadOut(BaseModel):
@@ -260,8 +372,12 @@ class CarritoItem(BaseModel):
 
 
 class VentaDigitalCreate(BaseModel):
-    items: list[CarritoItem]
+    items: list[CarritoItem] = []
+    sucursal_id: int | None = 1
     pasarela: str = "stripe"
+    payment_intent_id: str | None = None
+    session_id: str | None = None
+    return_url: str | None = None
 
 
 class PedidoItemOut(PedidoItemCreate):
