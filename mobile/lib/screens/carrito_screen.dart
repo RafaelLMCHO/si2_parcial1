@@ -11,6 +11,8 @@ import '../services/sucursal_service.dart';
 import '../services/ventas_service.dart';
 import 'pasarela_pago_screen.dart';
 
+import 'package:url_launcher/url_launcher.dart';
+
 enum _ModoCheckout { reserva, compra }
 
 class CarritoScreen extends StatefulWidget {
@@ -598,6 +600,10 @@ class _CarritoScreenState extends State<CarritoScreen> {
       _procesando = true;
     });
     final items = List.of(_carrito.items);
+    double total = 0;
+    for (final item in items) {
+      total += item.precio * item.cantidad;
+    }
     try {
       final compra = CompraDigitalCreate(
         sucursalId: 1,
@@ -635,7 +641,7 @@ class _CarritoScreenState extends State<CarritoScreen> {
       final res = await Navigator.of(context).push<CompraConfirmada>(
         MaterialPageRoute(
           builder: (_) => PasarelaPagoScreen(
-            intencion: intencion,
+            intencion: IntencionPago(monto: total, id: sesion.sessionId, clientSecret: '', simulado: true),
             publishableKey: cfg.stripePublishableKey,
             pasarelaSimulada: cfg.pasarelaSimulada,
             compra: compra,

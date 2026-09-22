@@ -25,6 +25,11 @@ class Settings(BaseSettings):
     AI_API_URL: str = "https://api.openai.com/v1"
     AI_API_KEY: str = ""
 
+    # Decart (vestidor virtual / virtual try-on, CU-07)
+    DECART_API_KEY: str = ""
+    DECART_BASE_URL: str = "https://api.decart.ai"
+    DECART_VION_MODELO: str = "lucy-vton-latest"
+
     # Configuración general
     APP_NAME: str = "FashionStore API"
     APP_VERSION: str = "1.0.0"

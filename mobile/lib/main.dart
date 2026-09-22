@@ -24,7 +24,7 @@ Future<void> main() async {
         SnackBar(
           content: Text(
             'Compra confirmada · Pedido #${res.idPedido} · '
-            '${res.total.toStringAsFixed(2)} US$',
+            '${res.total.toStringAsFixed(2)} US\$',
           ),
         ),
       );

@@ -21,6 +21,11 @@ public final class GeneratedPluginRegistrant {
       Log.e(TAG, "Error registering plugin android_intent_plus, dev.fluttercommunity.plus.androidintent.AndroidIntentPlugin", e);
     }
     try {
+      flutterEngine.getPlugins().add(new com.llfbandit.app_links.AppLinksPlugin());
+    } catch (Exception e) {
+      Log.e(TAG, "Error registering plugin app_links, com.llfbandit.app_links.AppLinksPlugin", e);
+    }
+    try {
       flutterEngine.getPlugins().add(new com.muzammil.arcore.flutter.plus.ArcoreFlutterPlugin());
     } catch (Exception e) {
       Log.e(TAG, "Error registering plugin arcore_flutter_plus, com.muzammil.arcore.flutter.plus.ArcoreFlutterPlugin", e);

@@ -87,3 +87,17 @@ class ConfigPublica {
         moneda: json['moneda'] as String? ?? 'usd',
       );
 }
+
+class SesionCheckout {
+  final String sessionId;
+  final String? checkoutUrl;
+  final bool simulado;
+
+  SesionCheckout({required this.sessionId, this.checkoutUrl, required this.simulado});
+
+  factory SesionCheckout.fromJson(Map<String, dynamic> json) => SesionCheckout(
+        sessionId: json['session_id'] as String,
+        checkoutUrl: json['url'] as String?,
+        simulado: json['simulado'] as bool? ?? false,
+      );
+}
