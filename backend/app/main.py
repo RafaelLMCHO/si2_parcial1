@@ -21,7 +21,12 @@ app = FastAPI(
 # CORS - permitir Angular (web) y apps móviles (Flutter)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Restringir en producción
+    allow_origins=[
+        "http://localhost:4200", 
+        "http://localhost:8100", 
+        "https://frontend-sepia-seven-97.vercel.app", 
+        "https://frontend-4d8zoth3c-sistemas26.vercel.app"
+    ],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
