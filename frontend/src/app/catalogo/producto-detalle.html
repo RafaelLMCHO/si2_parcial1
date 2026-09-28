@@ -35,6 +35,10 @@
             <mat-icon>add_shopping_cart</mat-icon>
             Agregar a carrito de reservas
           </button>
+          <button mat-stroked-button (click)="abrirVestidor()" *ngIf="tieneProbador">
+            <mat-icon>checkroom</mat-icon>
+            Probar con foto
+          </button>
         </mat-card-actions>
       </div>
     </div>
@@ -128,3 +132,7 @@
     </mat-card-content>
   </mat-card>
 </div>
+
+@if (vestidorAbierto() && producto()) {
+  <app-vestidor-dialog [producto]="producto()!" (cerrado)="cerrarVestidor()" />
+}

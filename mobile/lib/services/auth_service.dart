@@ -24,6 +24,18 @@ class AuthService {
     await ApiClient.clearSession();
   }
 
+  /// Devuelve el id del usuario autenticado, si hay sesion activa.
+  static Future<int?> currentUsuarioId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('fashionstore_usuario');
+    if (raw == null) return null;
+    try {
+      return (jsonDecode(raw)['id_usuario'] as num?)?.toInt();
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Devuelve el rol del usuario autenticado (CU-16: acceso a reportes
   /// para administradores y encargados).
   static Future<String?> currentRol() async {

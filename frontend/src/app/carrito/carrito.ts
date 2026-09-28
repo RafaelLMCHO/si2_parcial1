@@ -1,12 +1,14 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { CarritoService } from '../services/carrito.service';
 import { ReservaService } from '../services/reserva.service';
@@ -22,6 +24,7 @@ import { NavbarComponent } from '../shared/navbar';
   imports: [
     CommonModule,
     CurrencyPipe,
+    FormsModule,
     RouterLink,
     MatCardModule,
     MatButtonModule,
@@ -29,6 +32,7 @@ import { NavbarComponent } from '../shared/navbar';
     MatFormFieldModule,
     MatSelectModule,
     MatInputModule,
+    MatProgressSpinnerModule,
     NavbarComponent,
   ],
 })
@@ -47,10 +51,21 @@ export class CarritoComponent {
   readonly fechaSel = signal('');
   readonly horaSel = signal('10:00');
   readonly modo = signal<'reserva' | 'compra'>('reserva');
+
+  // Metodos de pago digital solicitados: Tarjeta, QR, Efectivo
+  readonly metodoPago = signal<'tarjeta' | 'qr' | 'efectivo'>('tarjeta');
+  readonly tipoTarjeta = signal<'credito' | 'debito'>('credito');
+  readonly qrData = signal<{ qr_url: string; monto: number; referencia: string } | null>(null);
+  readonly cargandoQr = signal(false);
+
+  // Datos simulados de tarjeta
+  readonly numeroTarjeta = signal('4242 4242 4242 4242');
+  readonly expTarjeta = signal('12/28');
+  readonly cvcTarjeta = signal('123');
+
   readonly cargando = signal(false);
   readonly pagando = signal(false);
-  readonly mostrarPago = signal(false);
-  readonly resultado = signal<{ id: number; tipo: string } | null>(null);
+  readonly resultado = signal<{ id: number; tipo: string; metodo?: string; total?: number; estado?: string } | null>(null);
   readonly error = signal<string | null>(null);
 
   readonly hoy = new Date().toISOString().slice(0, 10);
@@ -71,11 +86,13 @@ export class CarritoComponent {
 
   cambiarCantidad(id: number, cantidad: number): void {
     this.carrito.cambiarCantidad(id, cantidad);
+    this.qrData.set(null);
   }
 
   quitar(id: number): void {
     this.carrito.quitar(id);
     this.error.set(null);
+    this.qrData.set(null);
   }
 
   onImagenError(event: Event): void {
@@ -83,67 +100,93 @@ export class CarritoComponent {
     img.src = 'assets/placeholder.svg';
   }
 
-  iniciarCompra(): void {
+  onModoCompra(): void {
+    this.modo.set('compra');
+    this.error.set(null);
+    if (this.metodoPago() === 'qr' && !this.qrData()) {
+      this.cargarQr();
+    }
+  }
+
+  seleccionarMetodo(metodo: 'tarjeta' | 'qr' | 'efectivo'): void {
+    this.metodoPago.set(metodo);
+    this.error.set(null);
+    if (metodo === 'qr' && !this.qrData()) {
+      this.cargarQr();
+    }
+  }
+
+  cargarQr(): void {
     const lista = this.items();
     if (lista.length === 0) return;
 
-    this.error.set(null);
-    this.cargando.set(true);
-    const returnUrl = window.location.origin;
-
+    this.cargandoQr.set(true);
     this.ventas
-      .crearCheckout({
+      .generarQrDigital({
         sucursal_id: this.sucursalSel() || 1,
         items: lista.map((i) => ({ variante_id: i.variante_id, cantidad: i.cantidad })),
-        return_url: returnUrl,
       })
       .subscribe({
-        next: (sesion) => {
-          this.cargando.set(false);
-          if (sesion.simulado || !sesion.checkout_url) {
-            // Pasarela en modo simulado (sin claves reales): formulario inline
-            this.mostrarPago.set(true);
-            return;
-          }
-          // Pasarela real: redirigir a la página de Stripe (Checkout alojado)
-          window.location.href = sesion.checkout_url;
+        next: (data) => {
+          this.cargandoQr.set(false);
+          this.qrData.set(data);
         },
-        error: (err) => {
-          this.cargando.set(false);
-          const detail = err?.error?.detail?.toString();
-          this.error.set(detail ?? 'No se pudo iniciar el pago, verifique stock e intente de nuevo');
+        error: () => {
+          this.cargandoQr.set(false);
+          this.qrData.set({
+            monto: this.totalPrecio(),
+            qr_url: '',
+            referencia: `QR-${Math.floor(100000 + Math.random() * 900000)}`,
+          });
         },
       });
   }
 
-  procesarPagoSimulado(): void {
+  procesarPagoDigital(): void {
     const lista = this.items();
+    if (lista.length === 0) return;
+
     this.error.set(null);
     this.pagando.set(true);
+
+    let tipoPagoPayload = 'tarjeta_credito';
+    if (this.metodoPago() === 'tarjeta') {
+      tipoPagoPayload = this.tipoTarjeta() === 'debito' ? 'tarjeta_debito' : 'tarjeta_credito';
+    } else if (this.metodoPago() === 'qr') {
+      tipoPagoPayload = 'qr';
+    } else if (this.metodoPago() === 'efectivo') {
+      tipoPagoPayload = 'efectivo';
+    }
 
     this.ventas
       .confirmarCompra({
         sucursal_id: this.sucursalSel() || 1,
         items: lista.map((i) => ({ variante_id: i.variante_id, cantidad: i.cantidad })),
+        tipo_pago: tipoPagoPayload,
       })
       .subscribe({
         next: (res) => {
           this.pagando.set(false);
-          this.mostrarPago.set(false);
-          this.resultado.set({ id: res.id_pedido, tipo: 'compra' });
+          this.resultado.set({
+            id: res.id_pedido,
+            tipo: 'compra',
+            metodo: this.metodoPago(),
+            total: res.total,
+            estado: res.estado,
+          });
           this.carrito.limpiar();
         },
         error: (err) => {
           this.pagando.set(false);
           const detail = err?.error?.detail?.toString();
-          this.error.set(detail ?? 'Error al procesar el pago o confirmar la compra.');
+          this.error.set(detail ?? 'Error al procesar el pago o confirmar la compra digital.');
         },
       });
   }
 
   confirmar(): void {
     if (this.modo() === 'compra') {
-      this.iniciarCompra();
+      this.procesarPagoDigital();
       return;
     }
 

@@ -77,3 +77,13 @@ encargado_required = require_roles(RolUsuario.admin, RolUsuario.encargado)
 cajero_required = require_roles(
     RolUsuario.admin, RolUsuario.encargado, RolUsuario.cajero
 )
+
+# Cobrar con QR o con tarjeta desde el POS web lo puede hacer tambien el
+# cliente. El efectivo sigue siendo exclusivo del personal de caja, porque ahi
+# es el cajero el que cuenta el dinero y se queda con el ticket.
+pago_required = require_roles(
+    RolUsuario.admin,
+    RolUsuario.encargado,
+    RolUsuario.cajero,
+    RolUsuario.cliente,
+)

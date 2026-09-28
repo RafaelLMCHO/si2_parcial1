@@ -170,6 +170,7 @@ class Pago(Base):
     fecha_pago: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.now()
     )
+    datos_gateway: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     pedido: Mapped["Pedido"] = relationship(back_populates="pagos")
 

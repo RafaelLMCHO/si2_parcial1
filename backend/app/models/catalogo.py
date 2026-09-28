@@ -110,6 +110,7 @@ class Producto(Base):
     )
     imagen_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
     modelo_3d_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    prompt_vestidor: Mapped[str | None] = mapped_column(Text, nullable=True)
     activo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     categoria: Mapped["Categoria"] = relationship(back_populates="productos")

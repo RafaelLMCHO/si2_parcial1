@@ -6,6 +6,7 @@ import '../services/carrito_service.dart';
 import '../services/catalogo_service.dart';
 import '../services/ia_service.dart';
 import 'carrito_screen.dart';
+import 'pago_qr_screen.dart';
 import 'bitacora_screen.dart';
 import 'login_screen.dart';
 import 'mis_reservas_screen.dart';
@@ -116,6 +117,13 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     if (mounted) setState(() {});
   }
 
+  Future<void> _abrirPagoQr() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const PagoQrScreen()),
+    );
+    if (mounted) setState(() {});
+  }
+
   Future<void> _abrirProducto(int idProducto) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
@@ -145,6 +153,11 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
               tooltip: 'Reportes y dashboards',
               onPressed: _abrirReportes,
             ),
+          IconButton(
+            icon: const Icon(Icons.qr_code_scanner),
+            tooltip: 'Pagar QR del punto de venta',
+            onPressed: _abrirPagoQr,
+          ),
           IconButton(
             icon: const Icon(Icons.receipt_long_outlined),
             tooltip: 'Mis reservas',

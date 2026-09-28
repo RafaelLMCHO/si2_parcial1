@@ -157,17 +157,22 @@ CREATE TABLE proveedores (
 );
 
 CREATE TABLE productos (
-    id_producto    SERIAL PRIMARY KEY,
-    nombre         VARCHAR(150) NOT NULL,
-    descripcion    TEXT         NULL,
-    precio         NUMERIC(10,2) NOT NULL,
-    categoria_id   INTEGER      NOT NULL REFERENCES categorias(id_categoria),
-    temporada_id   INTEGER      NOT NULL REFERENCES temporadas(id_temporada),
-    coleccion_id   INTEGER      NULL REFERENCES colecciones(id_coleccion),
-    proveedor_id   INTEGER      NOT NULL REFERENCES proveedores(id_proveedor),
-    imagen_url     VARCHAR(255) NULL,
-    modelo_3d_url  VARCHAR(255) NULL,
-    activo         BOOLEAN      NOT NULL DEFAULT TRUE
+    id_producto     SERIAL PRIMARY KEY,
+    nombre          VARCHAR(150) NOT NULL,
+    descripcion     TEXT         NULL,
+    precio          NUMERIC(10,2) NOT NULL,
+    categoria_id    INTEGER      NOT NULL REFERENCES categorias(id_categoria),
+    temporada_id    INTEGER      NOT NULL REFERENCES temporadas(id_temporada),
+    coleccion_id    INTEGER      NULL REFERENCES colecciones(id_coleccion),
+    proveedor_id    INTEGER      NOT NULL REFERENCES proveedores(id_proveedor),
+    imagen_url      VARCHAR(255) NULL,
+    modelo_3d_url   VARCHAR(255) NULL,
+    -- Prompt en ingles que describe la prenda para el probador virtual con
+    -- camara (CU-07, Decart lucy-vton-latest). El modelo no interpreta la
+    -- imagen por si sola: sin este texto el producto no se puede probar.
+    -- NULL = producto sin probador. Lo rellena 07_prompts_vestidor.sql.
+    prompt_vestidor TEXT         NULL,
+    activo          BOOLEAN      NOT NULL DEFAULT TRUE
 );
 
 CREATE TABLE producto_variantes (

@@ -276,6 +276,156 @@
         font-size: 0.85rem;
         margin-top: 12px;
       }
+
+      .qr-panel {
+        margin-top: 12px;
+        padding: 12px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+
+        .qr-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+          margin-bottom: 10px;
+
+          .qr-titulo {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #64748b;
+          }
+
+          .qr-monto {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #0f172a;
+          }
+        }
+
+        .qr-body {
+          display: flex;
+          gap: 12px;
+          align-items: flex-start;
+        }
+
+        .qr-imagen {
+          width: 132px;
+          height: 132px;
+          border-radius: 6px;
+          background: #fff;
+          border: 1px solid #e2e8f0;
+          flex-shrink: 0;
+        }
+
+        .qr-info {
+          flex: 1;
+          min-width: 0;
+
+          .qr-instruccion {
+            font-size: 0.78rem;
+            color: #475569;
+            margin: 0 0 8px;
+          }
+
+          .qr-estado {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #16a34a;
+            margin-bottom: 8px;
+
+            &.pendiente {
+              color: #d97706;
+            }
+          }
+
+          .qr-transaccion {
+            font-size: 0.72rem;
+            color: #64748b;
+            margin: 0 0 2px;
+            word-break: break-all;
+
+            code {
+              background: #e2e8f0;
+              padding: 1px 4px;
+              border-radius: 3px;
+            }
+          }
+
+          .qr-simulado {
+            display: flex;
+            gap: 6px;
+            align-items: flex-start;
+            margin-top: 8px;
+            padding: 8px;
+            background: #fef3c7;
+            border-radius: 6px;
+            font-size: 0.72rem;
+            color: #92400e;
+          }
+
+          .btn-simular {
+            width: 100%;
+            margin-top: 10px;
+            font-size: 0.85rem;
+          }
+
+          // El panel de tarjeta no muestra la imagen del QR, asi que su cuerpo
+          // no necesita la division en dos columnas.
+          .tarjeta-panel {
+            .qr-body {
+              display: block;
+            }
+
+            .qr-info {
+              width: 100%;
+            }
+          }
+
+          .btn-reabrir {
+            margin-top: 8px;
+            font-size: 0.8rem;
+          }
+
+          .tarjeta-demo {
+            margin-top: 12px;
+            padding: 10px;
+            border: 1px dashed #94a3b8;
+            border-radius: 8px;
+            background: #f8fafc;
+
+            .tarjeta-demo-titulo {
+              margin: 0 0 8px;
+              font-size: 0.78rem;
+              font-weight: 700;
+              text-transform: uppercase;
+              letter-spacing: 0.04em;
+              color: #475569;
+            }
+
+            .tarjeta-demo-botones {
+              display: flex;
+              gap: 8px;
+              flex-wrap: wrap;
+
+              button {
+                flex: 1 1 140px;
+                font-size: 0.85rem;
+              }
+            }
+
+            .tarjeta-demo-nota {
+              margin: 8px 0 0;
+              font-size: 0.7rem;
+              line-height: 1.35;
+              color: #64748b;
+            }
+          }
+        }
+      }
     }
 
     .ticket-actions {

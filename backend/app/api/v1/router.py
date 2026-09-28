@@ -7,6 +7,7 @@ from app.api.v1.endpoints import (
     catalogo,
     inventario,
     reservas,
+    vestidor,
     ventas,
     pagos,
     ia,
@@ -22,6 +23,7 @@ api_router.include_router(sucursales.router, prefix="/sucursales", tags=["Sucurs
 api_router.include_router(catalogo.router, prefix="/catalogo", tags=["Catálogo"])
 api_router.include_router(inventario.router, prefix="/inventario", tags=["Inventario"])
 api_router.include_router(reservas.router, prefix="/reservas", tags=["Reservas"])
+api_router.include_router(vestidor.router, tags=["Vestidor Virtual"])
 api_router.include_router(ventas.router, prefix="/ventas", tags=["Ventas y Pagos"])
 api_router.include_router(pagos.router, prefix="/pagos", tags=["Gestión de Pagos y Pasarela"])
 api_router.include_router(ia.router, prefix="/ia", tags=["Inteligencia Artificial"])

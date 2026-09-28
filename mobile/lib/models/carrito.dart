@@ -7,6 +7,8 @@ class CarritoItem {
   final String? talla;
   final double precio;
   final String? imagenUrl;
+  DateTime? reservadoHasta;
+  int? idReserva;
 
   CarritoItem({
     required this.varianteId,
@@ -17,7 +19,11 @@ class CarritoItem {
     this.talla,
     required this.precio,
     this.imagenUrl,
+    this.reservadoHasta,
+    this.idReserva,
   });
+
+  bool get reservado => reservadoHasta != null;
 
   Map<String, dynamic> toJson() => {
         'variante_id': varianteId,
@@ -28,6 +34,8 @@ class CarritoItem {
         'talla': talla,
         'precio': precio,
         'imagen_url': imagenUrl,
+        'reservado_hasta': reservadoHasta?.toIso8601String(),
+        'id_reserva': idReserva,
       };
 
   factory CarritoItem.fromJson(Map<String, dynamic> json) => CarritoItem(
@@ -39,5 +47,12 @@ class CarritoItem {
         talla: json['talla'] as String?,
         precio: (json['precio'] as num).toDouble(),
         imagenUrl: json['imagen_url'] as String?,
+        reservadoHasta: _parseFecha(json['reservado_hasta']),
+        idReserva: json['id_reserva'] as int?,
       );
+
+  static DateTime? _parseFecha(dynamic v) {
+    if (v is! String || v.isEmpty) return null;
+    return DateTime.tryParse(v);
+  }
 }

@@ -15,6 +15,7 @@ import { SucursalService } from '../services/sucursal.service';
 import { CarritoService } from '../services/carrito.service';
 import { Color, Producto, ProductoVariante, SucursalDisponibilidad, Talla } from '../models/catalogo';
 import { NavbarComponent } from '../shared/navbar';
+import { VestidorDialogComponent } from '../core/vestidor-dialog.component';
 
 @Component({
   selector: 'app-producto-detalle',
@@ -32,6 +33,7 @@ import { NavbarComponent } from '../shared/navbar';
     MatSelectModule,
     MatTableModule,
     NavbarComponent,
+    VestidorDialogComponent,
   ],
 })
 export class ProductoDetalleComponent implements OnInit {
@@ -59,6 +61,22 @@ export class ProductoDetalleComponent implements OnInit {
   readonly cargandoDisp = signal(false);
   readonly errorDisp = signal<string | null>(null);
   readonly columnas = ['sucursal', 'ciudad', 'disponible', 'reservada', 'recibida', 'stockMinimo', 'estado'];
+
+  readonly vestidorAbierto = signal(false);
+
+  /** El probador solo se ofrece si hay imagen de prenda y prompt para el modelo. */
+  get tieneProbador(): boolean {
+    const p = this.producto();
+    return !!p?.imagen_url && !!p?.prompt_vestidor;
+  }
+
+  abrirVestidor(): void {
+    this.vestidorAbierto.set(true);
+  }
+
+  cerrarVestidor(): void {
+    this.vestidorAbierto.set(false);
+  }
 
   ngOnInit(): void {
     this.sucursalServicio.cargar();

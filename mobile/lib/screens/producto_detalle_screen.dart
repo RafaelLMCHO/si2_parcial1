@@ -11,7 +11,7 @@ import '../services/inventario_service.dart';
 import '../services/sucursal_service.dart';
 import '../services/auth_service.dart';
 import 'carrito_screen.dart';
-import 'vestidor_virtual_screen.dart';
+import 'vestidor_foto_screen.dart';
 
 class ProductoDetalleScreen extends StatefulWidget {
   const ProductoDetalleScreen({super.key, required this.productoId});
@@ -203,11 +203,9 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => VestidorVirtualScreen(
+        builder: (_) => VestidorFotoScreen(
           productoId: producto.idProducto,
           productoNombre: producto.nombre,
-          precio: producto.precio,
-          modeloUrl: ApiClient.resolveMediaUrl(producto.modelo3dUrl!),
         ),
       ),
     );
@@ -272,14 +270,15 @@ class _ProductoDetalleScreenState extends State<ProductoDetalleScreen> {
                     label: const Text('Agregar a carrito de reservas'),
                   ),
                 ),
-                if ((producto.modelo3dUrl ?? '').isNotEmpty) ...[
+                if ((producto.promptVestidor ?? '').isNotEmpty &&
+                      (producto.imagenUrl ?? '').isNotEmpty) ...[
                   const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       onPressed: () => _abrirVestidor(producto),
-                      icon: const Icon(Icons.view_in_ar),
-                      label: const Text('Probar con vestidor virtual (RA)'),
+                      icon: const Icon(Icons.checkroom),
+                      label: const Text('Probar con foto'),
                     ),
                   ),
                 ],

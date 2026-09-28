@@ -524,6 +524,27 @@ ALTER TABLE pedido_items       ENABLE TRIGGER ALL;
 ALTER TABLE producto_variantes ENABLE TRIGGER ALL;
 
 -- ============================================================
+-- SINCRONIZAR SECUENCIAS
+-- ============================================================
+-- Este script inserta las filas con id explícito, por lo que las secuencias
+-- de los id serial quedan atrás (en 1). Cualquier INSERT posterior de la
+-- aplicación choca con la clave primaria. Se alinean con el máximo actual.
+SELECT setval(pg_get_serial_sequence('pedidos', 'id_pedido'),
+              COALESCE((SELECT MAX(id_pedido) FROM pedidos), 1));
+SELECT setval(pg_get_serial_sequence('pedido_items', 'id_pedido_item'),
+              COALESCE((SELECT MAX(id_pedido_item) FROM pedido_items), 1));
+SELECT setval(pg_get_serial_sequence('pagos', 'id_pago'),
+              COALESCE((SELECT MAX(id_pago) FROM pagos), 1));
+SELECT setval(pg_get_serial_sequence('reservas', 'id_reserva'),
+              COALESCE((SELECT MAX(id_reserva) FROM reservas), 1));
+SELECT setval(pg_get_serial_sequence('reserva_items', 'id_reserva_item'),
+              COALESCE((SELECT MAX(id_reserva_item) FROM reserva_items), 1));
+SELECT setval(pg_get_serial_sequence('movimientos_inventario', 'id_movimiento'),
+              COALESCE((SELECT MAX(id_movimiento) FROM movimientos_inventario), 1));
+SELECT setval(pg_get_serial_sequence('bitacoras', 'id_bitacora'),
+              COALESCE((SELECT MAX(id_bitacora) FROM bitacoras), 1));
+
+-- ============================================================
 -- VERIFICACIÓN RÁPIDA
 -- ============================================================
 \echo '============================================'

@@ -3,37 +3,58 @@
 <div class="page-container">
   <h1 class="page-title">
     <mat-icon>shopping_cart</mat-icon>
-    Carrito de reservas
+    Carrito de reservas y compra digital
   </h1>
 
+  <!-- Pantalla de Éxito -->
   <mat-card class="exito" *ngIf="resultado()">
     <mat-card-content>
       <mat-icon color="primary" class="exito-icon">check_circle</mat-icon>
-      <h2 *ngIf="resultado()!.tipo === 'reserva'">Reserva creada exitosamente, le esperamos en la tienda</h2>
-      <h2 *ngIf="resultado()!.tipo === 'compra'">¡Compra digital exitosa!</h2>
-      <p *ngIf="resultado()!.tipo === 'reserva'">Número de reserva: <strong>#{{ resultado()!.id }}</strong></p>
-      <p *ngIf="resultado()!.tipo === 'compra'">Número de pedido: <strong>#{{ resultado()!.id }}</strong>. Recibirás un correo con el comprobante.</p>
-      <div class="exito-actions" style="display: flex; gap: 12px; margin-top: 16px; justify-content: center;">
+      <h2 *ngIf="resultado()!.tipo === 'reserva'">¡Reserva creada exitosamente!</h2>
+      <h2 *ngIf="resultado()!.tipo === 'compra'">¡Compra digital completada con éxito!</h2>
+      
+      <p *ngIf="resultado()!.tipo === 'reserva'">
+        Número de reserva: <strong>#{{ resultado()!.id }}</strong>. Te esperamos en la sucursal seleccionada para medirte las prendas.
+      </p>
+
+      <div *ngIf="resultado()!.tipo === 'compra'" class="compra-exitosa-detalles">
+        <p>Número de pedido: <strong>#{{ resultado()!.id }}</strong></p>
+        <div class="metodo-confirmado" [ngClass]="resultado()!.metodo">
+          <mat-icon *ngIf="resultado()!.metodo === 'tarjeta'">credit_card</mat-icon>
+          <mat-icon *ngIf="resultado()!.metodo === 'qr'">qr_code_2</mat-icon>
+          <mat-icon *ngIf="resultado()!.metodo === 'efectivo'">payments</mat-icon>
+          <span>
+            <strong *ngIf="resultado()!.metodo === 'tarjeta'">Pago con Tarjeta:</strong>
+            <strong *ngIf="resultado()!.metodo === 'qr'">Pago con Código QR:</strong>
+            <strong *ngIf="resultado()!.metodo === 'efectivo'">Pago en Efectivo (Contra Entrega):</strong>
+            {{ resultado()!.metodo === 'efectivo' ? 'Pedido registrado para cobro al entregar.' : 'Pago verificado y comprobante digital emitido.' }}
+          </span>
+        </div>
+      </div>
+
+      <div class="exito-actions">
         <a mat-raised-button color="primary" *ngIf="resultado()!.tipo === 'compra'" routerLink="/compras">
-          <mat-icon>receipt</mat-icon> Ver mis compras
+          <mat-icon>receipt_long</mat-icon> Ver Mis Compras
         </a>
         <a mat-stroked-button color="primary" routerLink="/catalogo">
-          <mat-icon>storefront</mat-icon> Seguir explorando
+          <mat-icon>storefront</mat-icon> Seguir explorando prendas
         </a>
       </div>
     </mat-card-content>
   </mat-card>
 
+  <!-- Carrito Activo -->
   <ng-container *ngIf="!resultado()">
     <mat-card class="vacio" *ngIf="vacio()">
       <mat-card-content>
         <mat-icon class="vacio-icon">inventory_2</mat-icon>
-        <p>Tu carrito de reservas está vacío.</p>
-        <a mat-raised-button color="primary" routerLink="/catalogo">Ver catálogo</a>
+        <p>Tu carrito está vacío.</p>
+        <a mat-raised-button color="primary" routerLink="/catalogo">Ver catálogo de prendas</a>
       </mat-card-content>
     </mat-card>
 
     <ng-container *ngIf="!vacio()">
+      <!-- Lista de Artículos -->
       <mat-card class="items-card">
         <div class="item" *ngFor="let i of items()">
           <img
@@ -66,12 +87,13 @@
         </div>
         <mat-card-actions class="total-row">
           <span>
-            {{ totalPrendas() }} prenda(s) · Total estimado
+            {{ totalPrendas() }} prenda(s) · Total
             {{ totalPrecio() | currency: 'Bs.' : 'symbol' : '1.2-2' }}
           </span>
         </mat-card-actions>
       </mat-card>
 
+      <!-- Selector de Modo: Reserva vs Compra Digital -->
       <mat-card class="detalle-card">
         <mat-card-header>
           <mat-card-title>¿Cómo deseas obtener tus prendas?</mat-card-title>
@@ -80,22 +102,25 @@
         <div class="modo-tabs">
           <button 
             mat-button 
+            type="button"
             [class.active]="modo() === 'reserva'" 
-            (click)="modo.set('reserva'); mostrarPago.set(false)"
+            (click)="modo.set('reserva')"
           >
             <mat-icon>storefront</mat-icon> Probar en tienda (Reserva)
           </button>
           <button 
             mat-button 
+            type="button"
             [class.active]="modo() === 'compra'" 
-            (click)="modo.set('compra')"
+            (click)="onModoCompra()"
           >
             <mat-icon>local_shipping</mat-icon> Comprar ahora (Digital)
           </button>
         </div>
 
+        <!-- MODO 1: RESERVA EN TIENDA -->
         <mat-card-content *ngIf="modo() === 'reserva'">
-          <p class="subtitle">Elige la sucursal y el horario de atención para medirte las prendas.</p>
+          <p class="subtitle">Elige la sucursal y el horario de atención para medirte las prendas sin compromiso de compra.</p>
           <mat-form-field appearance="outline">
             <mat-label>Sucursal</mat-label>
             <mat-select [value]="sucursalSel()" (selectionChange)="sucursalSel.set($event.value)">
@@ -118,45 +143,7 @@
               <input matInput type="time" [value]="horaSel()" (input)="horaSel.set(inputHora.value)" #inputHora />
             </mat-form-field>
           </div>
-        </mat-card-content>
 
-        <mat-card-content *ngIf="modo() === 'compra' && !mostrarPago()">
-          <p class="subtitle">Al confirmar, verificaremos el stock y te redirigiremos a la pasarela de pago segura.</p>
-          <div class="resumen-compra">
-            <p><strong>Subtotal:</strong> {{ totalPrecio() | currency: 'Bs.' : 'symbol' : '1.2-2' }}</p>
-            <p><strong>Envío:</strong> Gratis (Promoción)</p>
-            <h3><strong>Total a pagar:</strong> {{ totalPrecio() | currency: 'Bs.' : 'symbol' : '1.2-2' }}</h3>
-          </div>
-        </mat-card-content>
-
-        <mat-card-content *ngIf="modo() === 'compra' && mostrarPago()" class="pago-simulado-box">
-          <h3>Pasarela de Pago (Stripe Sandbox)</h3>
-          <p>Introduce los datos de tu tarjeta para completar la compra.</p>
-          
-          <mat-form-field appearance="outline">
-            <mat-label>Número de Tarjeta</mat-label>
-            <input matInput placeholder="4242 4242 4242 4242" value="4242 4242 4242 4242" disabled />
-            <mat-icon matSuffix>credit_card</mat-icon>
-          </mat-form-field>
-          
-          <div class="duo">
-            <mat-form-field appearance="outline">
-              <mat-label>MM/AA</mat-label>
-              <input matInput placeholder="12/26" value="12/26" disabled />
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>CVC</mat-label>
-              <input matInput placeholder="123" value="123" disabled />
-            </mat-form-field>
-          </div>
-
-          <button mat-raised-button color="accent" class="btn-pagar" [disabled]="pagando()" (click)="procesarPagoSimulado()">
-            <mat-icon>{{ pagando() ? 'sync' : 'payment' }}</mat-icon>
-            {{ pagando() ? 'Procesando pago...' : 'Pagar ' + (totalPrecio() | currency: 'Bs.' : 'symbol' : '1.2-2') }}
-          </button>
-        </mat-card-content>
-
-        <mat-card-actions *ngIf="!mostrarPago()">
           <mat-error *ngIf="error()" class="error-box">{{ error() }}</mat-error>
           <button
             mat-raised-button
@@ -165,10 +152,235 @@
             [disabled]="cargando()"
             (click)="confirmar()"
           >
-            <mat-icon>{{ cargando() ? 'hourglass_top' : (modo() === 'reserva' ? 'event_available' : 'shopping_bag') }}</mat-icon>
-            {{ cargando() ? 'Verificando...' : (modo() === 'reserva' ? 'Confirmar reserva' : 'Proceder al pago') }}
+            <mat-icon>{{ cargando() ? 'hourglass_top' : 'event_available' }}</mat-icon>
+            {{ cargando() ? 'Verificando disponibilidad...' : 'Confirmar reserva' }}
           </button>
-        </mat-card-actions>
+        </mat-card-content>
+
+        <!-- MODO 2: COMPRA DIGITAL (Tarjetas, QR o Efectivo) -->
+        <mat-card-content *ngIf="modo() === 'compra'" class="compra-digital-container">
+          <div class="resumen-compra">
+            <p><span>Subtotal:</span> <strong>{{ totalPrecio() | currency: 'Bs.' : 'symbol' : '1.2-2' }}</strong></p>
+            <p><span>Envío digital a domicilio:</span> <strong class="envio-gratis">Gratis (Promoción)</strong></p>
+            <h3 class="total-line">
+              <span>Total a pagar:</span>
+              <span>{{ totalPrecio() | currency: 'Bs.' : 'symbol' : '1.2-2' }}</span>
+            </h3>
+          </div>
+
+          <h3 class="seccion-pago-titulo">
+            <mat-icon>payments</mat-icon>
+            Selecciona tu método de pago
+          </h3>
+
+          <!-- Grid de Métodos de Pago: Tarjeta, QR, Efectivo -->
+          <div class="metodos-grid">
+            <!-- Tarjetas -->
+            <div 
+              class="metodo-chip" 
+              [class.activo]="metodoPago() === 'tarjeta'"
+              (click)="seleccionarMetodo('tarjeta')"
+            >
+              <div class="chip-top">
+                <mat-icon class="icono-metodo">credit_card</mat-icon>
+                <span class="badge-tag">Stripe Sandbox</span>
+              </div>
+              <span class="chip-nombre">Tarjetas</span>
+              <span class="chip-desc">Débito o Crédito</span>
+            </div>
+
+            <!-- Código QR -->
+            <div 
+              class="metodo-chip" 
+              [class.activo]="metodoPago() === 'qr'"
+              (click)="seleccionarMetodo('qr')"
+            >
+              <div class="chip-top">
+                <mat-icon class="icono-metodo">qr_code_2</mat-icon>
+                <span class="badge-tag qr-tag">QR Simple</span>
+              </div>
+              <span class="chip-nombre">Código QR</span>
+              <span class="chip-desc">Banca móvil boliviana</span>
+            </div>
+
+            <!-- Efectivo -->
+            <div 
+              class="metodo-chip" 
+              [class.activo]="metodoPago() === 'efectivo'"
+              (click)="seleccionarMetodo('efectivo')"
+            >
+              <div class="chip-top">
+                <mat-icon class="icono-metodo">payments</mat-icon>
+                <span class="badge-tag cash-tag">Contra entrega</span>
+              </div>
+              <span class="chip-nombre">Efectivo</span>
+              <span class="chip-desc">Pagas al recibir o retirar</span>
+            </div>
+          </div>
+
+          <!-- PANEL 1: TARJETAS (DÉBITO / CRÉDITO) -->
+          <div *ngIf="metodoPago() === 'tarjeta'" class="panel-metodo panel-tarjeta">
+            <div class="subtipo-selector">
+              <button 
+                type="button"
+                class="subtipo-btn" 
+                [class.activo]="tipoTarjeta() === 'credito'"
+                (click)="tipoTarjeta.set('credito')"
+              >
+                <mat-icon>credit_card</mat-icon> Tarjeta de Crédito
+              </button>
+              <button 
+                type="button"
+                class="subtipo-btn" 
+                [class.activo]="tipoTarjeta() === 'debito'"
+                (click)="tipoTarjeta.set('debito')"
+              >
+                <mat-icon>account_balance_wallet</mat-icon> Tarjeta de Débito
+              </button>
+            </div>
+
+            <div class="tarjeta-mockup">
+              <div class="mockup-header">
+                <span class="mockup-tipo">{{ tipoTarjeta() === 'debito' ? 'DÉBITO' : 'CRÉDITO' }}</span>
+                <span class="mockup-marca">VISA / MC</span>
+              </div>
+              <div class="mockup-chip"></div>
+              <div class="mockup-numero">{{ numeroTarjeta() }}</div>
+              <div class="mockup-footer">
+                <span>CLIENTE REGISTRADO</span>
+                <span>EXP: {{ expTarjeta() }}</span>
+              </div>
+            </div>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Número de Tarjeta</mat-label>
+              <input matInput [value]="numeroTarjeta()" disabled />
+              <mat-icon matSuffix>credit_card</mat-icon>
+            </mat-form-field>
+
+            <div class="duo">
+              <mat-form-field appearance="outline">
+                <mat-label>Vencimiento (MM/AA)</mat-label>
+                <input matInput [value]="expTarjeta()" disabled />
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>CVC / CVV</mat-label>
+                <input matInput [value]="cvcTarjeta()" disabled />
+              </mat-form-field>
+            </div>
+
+            <div class="seguridad-aviso">
+              <mat-icon>lock</mat-icon>
+              <span>Pago cifrado seguro SSL de 256 bits (Stripe Sandbox).</span>
+            </div>
+
+            <mat-error *ngIf="error()" class="error-box">{{ error() }}</mat-error>
+
+            <button 
+              mat-raised-button 
+              color="primary" 
+              class="btn-accion-pago" 
+              [disabled]="pagando()"
+              (click)="procesarPagoDigital()"
+            >
+              <mat-icon>{{ pagando() ? 'hourglass_top' : 'lock' }}</mat-icon>
+              {{ pagando() ? 'Procesando pago con tarjeta...' : 'Pagar con Tarjeta (' + (totalPrecio() | currency: 'Bs.' : 'symbol' : '1.2-2') + ')' }}
+            </button>
+          </div>
+
+          <!-- PANEL 2: CÓDIGO QR -->
+          <div *ngIf="metodoPago() === 'qr'" class="panel-metodo panel-qr">
+            <div class="qr-info-header">
+              <mat-icon>qr_code_scanner</mat-icon>
+              <div>
+                <strong>Instrucciones de Pago QR:</strong>
+                <p>1. Abre tu aplicación bancaria móvil (Banco Unión, BCP, BNB, Mercantil, Bisa, etc.).</p>
+                <p>2. Escanea el código QR generado a continuación.</p>
+                <p>3. Verifica el monto de <strong>{{ totalPrecio() | currency: 'Bs.' : 'symbol' : '1.2-2' }}</strong> y confirma.</p>
+              </div>
+            </div>
+
+            <div class="qr-container-box">
+              <div *ngIf="cargandoQr()" class="qr-loading">
+                <mat-spinner diameter="44"></mat-spinner>
+                <span>Generando código QR dinámico...</span>
+              </div>
+
+              <ng-container *ngIf="!cargandoQr()">
+                <div class="qr-marco" *ngIf="qrData()?.qr_url">
+                  <img [src]="qrData()!.qr_url" alt="Código QR de Pago" class="qr-imagen" />
+                </div>
+                
+                <div class="qr-marco qr-simulado" *ngIf="!qrData()?.qr_url">
+                  <mat-icon class="qr-icono-grande">qr_code_2</mat-icon>
+                  <span>QR Dinámico Generado</span>
+                </div>
+
+                <div class="qr-etiqueta-monto">
+                  <span class="monto-valor">{{ totalPrecio() | currency: 'Bs.' : 'symbol' : '1.2-2' }}</span>
+                  <span class="ref-valor">{{ qrData()?.referencia || 'FASHIONSTORE-QR' }}</span>
+                  <span class="timer-tag"><mat-icon>timer</mat-icon> Código activo durante 15 minutos</span>
+                </div>
+              </ng-container>
+            </div>
+
+            <mat-error *ngIf="error()" class="error-box">{{ error() }}</mat-error>
+
+            <button 
+              mat-raised-button 
+              color="accent" 
+              class="btn-accion-pago btn-qr-confirmar" 
+              [disabled]="pagando()"
+              (click)="procesarPagoDigital()"
+            >
+              <mat-icon>{{ pagando() ? 'hourglass_top' : 'check_circle' }}</mat-icon>
+              {{ pagando() ? 'Verificando pago QR...' : 'Ya realicé el pago QR (Confirmar Compra)' }}
+            </button>
+          </div>
+
+          <!-- PANEL 3: EFECTIVO (CONTRA ENTREGA) -->
+          <div *ngIf="metodoPago() === 'efectivo'" class="panel-metodo panel-efectivo">
+            <div class="efectivo-aviso">
+              <mat-icon class="efectivo-icono-principal">payments</mat-icon>
+              <h4>Pago en Efectivo contra entrega</h4>
+              <p>
+                Tu pedido digital será procesado de inmediato. Puedes pagar en efectivo en el momento de la entrega en tu domicilio o al retirar tus prendas en la sucursal seleccionada.
+              </p>
+            </div>
+
+            <div class="efectivo-total-box">
+              <span>Monto exacto a pagar en efectivo:</span>
+              <strong class="monto-efectivo">{{ totalPrecio() | currency: 'Bs.' : 'symbol' : '1.2-2' }}</strong>
+            </div>
+
+            <mat-form-field appearance="outline" class="sucursal-retiro">
+              <mat-label>Sucursal de retiro / entrega</mat-label>
+              <mat-select [value]="sucursalSel()" (selectionChange)="sucursalSel.set($event.value)">
+                <mat-option *ngFor="let s of sucursales()" [value]="s.id_sucursal">
+                  {{ s.nombre }} — {{ s.ciudad?.nombre || '' }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <div class="nota-entrega">
+              <mat-icon>info</mat-icon>
+              <span>Por favor ten a mano el monto exacto para agilizar la entrega de tu pedido.</span>
+            </div>
+
+            <mat-error *ngIf="error()" class="error-box">{{ error() }}</mat-error>
+
+            <button 
+              mat-raised-button 
+              color="primary" 
+              class="btn-accion-pago btn-efectivo-confirmar" 
+              [disabled]="pagando()"
+              (click)="procesarPagoDigital()"
+            >
+              <mat-icon>{{ pagando() ? 'hourglass_top' : 'local_shipping' }}</mat-icon>
+              {{ pagando() ? 'Registrando pedido...' : 'Confirmar pedido en Efectivo (' + (totalPrecio() | currency: 'Bs.' : 'symbol' : '1.2-2') + ')' }}
+            </button>
+          </div>
+        </mat-card-content>
       </mat-card>
     </ng-container>
   </ng-container>

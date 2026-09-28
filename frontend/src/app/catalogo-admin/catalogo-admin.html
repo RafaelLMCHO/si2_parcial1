@@ -39,6 +39,13 @@
           <textarea matInput formControlName="descripcion" rows="2"></textarea>
         </mat-form-field>
 
+        <mat-form-field class="cap-full" appearance="outline">
+          <mat-label>Prompt del probador con cámara (opcional)</mat-label>
+          <textarea matInput formControlName="prompt_vestidor" rows="2"
+            placeholder="Replace the current top with a plain white crew neck cotton t-shirt with a regular fit"></textarea>
+          <mat-hint>Instrucción en inglés que describe la prenda. Si se llena junto con la imagen, el producto muestra el botón "Probar con cámara".</mat-hint>
+        </mat-form-field>
+
         <div class="cap-form-row">
           <mat-form-field appearance="outline">
             <mat-label>Categoría</mat-label>

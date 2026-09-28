@@ -152,14 +152,38 @@ export class MisReservasComponent implements OnInit {
   }
 
   pagar(id: number): void {
-    const ok = window.confirm(`¿Deseas pagar la reserva #${id} mediante la pasarela Stripe Sandbox y completarla como compra digital?`);
-    if (!ok) return;
+    const opcion = window.prompt(
+      `Selecciona el método de pago digital para la reserva #${id}:\n` +
+      `1: 💳 Tarjeta de Crédito / Débito\n` +
+      `2: 📱 Código QR Simple\n` +
+      `3: 💵 Pago en Efectivo contra entrega\n\n` +
+      `Ingresa 1, 2 o 3:`,
+      '1'
+    );
+    if (!opcion) return;
+
+    let tipoPago = 'tarjeta_credito';
+    let metodoNombre = 'Tarjeta';
+    if (opcion.trim() === '2' || opcion.toLowerCase().includes('qr')) {
+      tipoPago = 'qr';
+      metodoNombre = 'Código QR';
+    } else if (opcion.trim() === '3' || opcion.toLowerCase().includes('efectivo')) {
+      tipoPago = 'efectivo';
+      metodoNombre = 'Efectivo contra entrega';
+    }
+
     this.pagandoId.set(id);
-    this.ventasServ.pagarReservaDigital(id).subscribe({
+    this.ventasServ.pagarReservaDigital(id, tipoPago).subscribe({
       next: (res) => {
         this.pagandoId.set(null);
-        this.snackbar.open(`¡Pago exitoso! Pedido #${res.id_pedido} registrado como COMPRA DIGITAL.`, 'Ver Compras', { duration: 6000 })
-          .onAction().subscribe(() => this.router.navigate(['/compras']));
+        this.snackbar
+          .open(
+            `¡Compra digital registrada (${metodoNombre})! Pedido #${res.id_pedido}.`,
+            'Ver Compras',
+            { duration: 6000 }
+          )
+          .onAction()
+          .subscribe(() => this.router.navigate(['/compras']));
         this.cargar();
       },
       error: (err) => {

@@ -82,6 +82,7 @@ export interface Producto {
   proveedor_id: number;
   imagen_url?: string | null;
   modelo_3d_url?: string | null;
+  prompt_vestidor?: string | null;
   activo: boolean;
   categoria?: Categoria | null;
   temporada?: Temporada | null;
@@ -112,4 +113,5 @@ export interface ProductoForm {
   proveedor_id: number;
   imagen_url?: string | null;
   modelo_3d_url?: string | null;
+  prompt_vestidor?: string | null;
 }

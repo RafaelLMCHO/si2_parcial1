@@ -1,7 +1,6 @@
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 
-import 'models/venta.dart';
 import 'screens/login_screen.dart';
 import 'services/ventas_service.dart';
 

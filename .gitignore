@@ -13,6 +13,7 @@ dist/
 .dart_tool/
 build/
 .flutter-plugins
+*.apk
 
 # Sistema operativo
 .DS_Store

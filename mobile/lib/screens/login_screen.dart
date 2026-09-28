@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../api/api_client.dart';
 import '../services/auth_service.dart';
 import 'catalogo_screen.dart';
 
@@ -104,7 +105,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: TextStyle(color: Theme.of(context).colorScheme.error),
                     ),
                   ],
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
                   FilledButton(
                     onPressed: _cargando ? null : _ingresar,
                     style: FilledButton.styleFrom(
@@ -114,15 +115,100 @@ class _LoginScreenState extends State<LoginScreen> {
                         ? const SizedBox(
                             width: 20,
                             height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                           )
                         : const Text('Ingresar'),
+                  ),
+                  const SizedBox(height: 20),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Acceso rápido para pruebas:',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: _cargando
+                              ? null
+                              : () {
+                                  _email.text = 'laura.vargas@gmail.com';
+                                  _contrasena.text = 'cliente123';
+                                  _ingresar();
+                                },
+                          child: const Text('Cliente: Laura'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: _cargando
+                              ? null
+                              : () {
+                                  _email.text = 'admin@fashionstore.bo';
+                                  _contrasena.text = 'admin123';
+                                  _ingresar();
+                                },
+                          child: const Text('Admin'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  InkWell(
+                    onTap: _cambiarServidor,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        'Servidor: ${ApiClient.baseUrl()}',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Theme.of(context).colorScheme.outline,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _cambiarServidor() {
+    final ctrl = TextEditingController(text: ApiClient.baseUrl());
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cambiar URL del Servidor'),
+        content: TextField(
+          controller: ctrl,
+          decoration: const InputDecoration(
+            labelText: 'URL de la API',
+            hintText: 'http://192.168.1.10:8000/api/v1',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              ApiClient.setCustomUrl(ctrl.text);
+              Navigator.of(ctx).pop();
+              setState(() {});
+            },
+            child: const Text('Guardar'),
+          ),
+        ],
       ),
     );
   }

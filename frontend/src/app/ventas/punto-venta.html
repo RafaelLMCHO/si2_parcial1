@@ -1,4 +1,4 @@
-<app-navbar></app-navbar>
+﻿<app-navbar></app-navbar>
 
 <div class="pos-container">
   <!-- Encabezado POS -->
@@ -219,6 +219,157 @@
             </div>
           </div>
 
+          <!-- Cobro QR: se muestra el código y se espera a la pasarela -->
+          <div class="qr-panel" *ngIf="tipoPago() === 'qr' && cobroQr() && !cobroFallido()">
+            <div class="qr-header">
+              <span class="qr-titulo">Cobro QR generado</span>
+              <span class="qr-monto">{{ cobroQr()!.total | currency: 'Bs.' : 'symbol' : '1.2-2' }}</span>
+            </div>
+
+            <div class="qr-body">
+              <img [src]="cobroQr()!.qr_url" alt="Codigo QR de pago" class="qr-imagen" />
+
+              <div class="qr-info">
+                <p class="qr-instruccion" *ngIf="estadoCobroQr()?.estado === 'pendiente'">
+                  El cliente debe escanear el codigo con la app de su banco y
+                  completar el pago. La venta se confirma automaticamente.
+                </p>
+
+                <div class="qr-estado" [class.pendiente]="estadoCobroQr()?.estado === 'pendiente'">
+                  <mat-spinner *ngIf="estadoCobroQr()?.estado === 'pendiente'" diameter="18"></mat-spinner>
+                  <mat-icon *ngIf="estadoCobroQr()?.estado !== 'pendiente'">check_circle</mat-icon>
+                  <span>
+                    {{
+                      estadoCobroQr()?.estado === 'pendiente'
+                        ? 'Esperando pago del cliente...'
+                        : 'Pago confirmado'
+                    }}
+                  </span>
+                </div>
+
+                <p class="qr-transaccion">
+                  Transaccion: <code>{{ cobroQr()!.transaccion_id }}</code>
+                </p>
+                <p class="qr-transaccion">
+                  Vence:
+                  {{ cobroQr()!.expires_at | date: 'dd/MM/yyyy HH:mm' }}
+                </p>
+
+                <div class="qr-simulado" *ngIf="cobroQr()!.simulado">
+                  <mat-icon>science</mat-icon>
+                  <span>
+                    Modo simulado: no se mueve dinero real. Al obtener el appkey
+                    de la pasarela este bloque desaparece.
+                  </span>
+                </div>
+
+                <button
+                  mat-raised-button
+                  color="accent"
+                  class="btn-simular"
+                  *ngIf="cobroQr()!.simulado && estadoCobroQr()?.estado === 'pendiente'"
+                  [disabled]="procesandoVenta()"
+                  (click)="simularPagoQr()"
+                >
+                  <mat-icon>smartphone</mat-icon>
+                  Simular pago del cliente
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cobro con tarjeta: se abre la pagina de la pasarela y se espera su
+               confirmacion. Debito y credito son el mismo camino. -->
+          <div
+            class="qr-panel tarjeta-panel"
+            *ngIf="(tipoPago() === 'tarjeta_debito' || tipoPago() === 'tarjeta_credito') && cobroTarjeta()"
+          >
+            <div class="qr-header">
+              <span class="qr-titulo">
+                {{
+                  tipoPago() === 'tarjeta_debito'
+                    ? 'Cobro con tarjeta de débito'
+                    : 'Cobro con tarjeta de crédito'
+                }}
+              </span>
+              <span class="qr-monto">
+                {{ cobroTarjeta()!.total | currency: 'Bs.' : 'symbol' : '1.2-2' }}
+              </span>
+            </div>
+
+            <div class="qr-info">
+              <p class="qr-instruccion" *ngIf="estadoCobroQr()?.estado === 'pendiente'">
+                Pedile al cliente que pague en la pagina que se abrio. La venta se
+                confirma sola cuando la pasarela avise que entro el dinero.
+              </p>
+
+              <div class="qr-estado" [class.pendiente]="estadoCobroQr()?.estado === 'pendiente'">
+                <mat-spinner *ngIf="estadoCobroQr()?.estado === 'pendiente'" diameter="18"></mat-spinner>
+                <mat-icon *ngIf="estadoCobroQr()?.estado !== 'pendiente'">check_circle</mat-icon>
+                <span>
+                  {{
+                    estadoCobroQr()?.estado === 'pendiente'
+                      ? 'Esperando pago con tarjeta...'
+                      : 'Pago confirmado'
+                  }}
+                </span>
+              </div>
+
+              <p class="qr-transaccion">
+                Transaccion: <code>{{ cobroTarjeta()!.transaccion_id }}</code>
+              </p>
+
+              <button
+                mat-stroked-button
+                class="btn-reabrir"
+                *ngIf="cobroTarjeta()!.checkout_url"
+                (click)="abrirPasarela(cobroTarjeta()!.checkout_url!)"
+              >
+                <mat-icon>open_in_new</mat-icon>
+                Volver a abrir la pagina de pago
+              </button>
+
+              <div class="qr-simulado" *ngIf="cobroTarjeta()!.simulado">
+                <mat-icon>science</mat-icon>
+                <span>
+                  Modo demostracion: no se mueve dinero real. Al cargar la clave de
+                  la pasarela este bloque desaparece.
+                </span>
+              </div>
+
+              <div
+                class="tarjeta-demo"
+                *ngIf="cobroTarjeta()!.simulado && estadoCobroQr()?.estado === 'pendiente'"
+              >
+                <p class="tarjeta-demo-titulo">Demostracion del resultado</p>
+                <div class="tarjeta-demo-botones">
+                  <button
+                    mat-raised-button
+                    color="primary"
+                    [disabled]="procesandoVenta()"
+                    (click)="resolverPagoTarjetaSimulado(true)"
+                  >
+                    <mat-icon>check</mat-icon>
+                    Aprobar pago
+                  </button>
+                  <button
+                    mat-raised-button
+                    color="warn"
+                    [disabled]="procesandoVenta()"
+                    (click)="resolverPagoTarjetaSimulado(false)"
+                  >
+                    <mat-icon>close</mat-icon>
+                    Rechazar pago
+                  </button>
+                </div>
+                <p class="tarjeta-demo-nota">
+                  Los botones mandan que tarjeta uso el cliente, no el resultado.
+                  La pasarela decide si aprueba o rechaza.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div *ngIf="error()" class="error-msg">
             <mat-icon>error</mat-icon> {{ error() }}
           </div>
@@ -229,11 +380,30 @@
             mat-raised-button
             color="primary"
             class="btn-cobrar"
-            [disabled]="ticket().length === 0 || procesandoVenta()"
+            [disabled]="ticket().length === 0 || procesandoVenta() || esperandoPago()"
             (click)="procesarVentaPresencial()"
           >
-            <mat-icon>{{ procesandoVenta() ? 'sync' : 'point_of_sale' }}</mat-icon>
-            {{ procesandoVenta() ? 'Procesando...' : 'Cobrar e Imprimir Ticket' }}
+            <mat-icon>
+              {{
+                esperandoPago()
+                  ? 'hourglass_top'
+                  : procesandoVenta()
+                    ? 'sync'
+                    : 'point_of_sale'
+              }}
+            </mat-icon>
+            {{
+              esperandoPago()
+                ? 'Esperando pago...'
+                : tipoPago() === 'qr' && estadoCobroQr()
+                  ? 'Generar nuevo cobro QR'
+                  : (tipoPago() === 'tarjeta_debito' || tipoPago() === 'tarjeta_credito') &&
+                      estadoCobroQr()
+                    ? 'Generar nuevo cobro con tarjeta'
+                    : procesandoVenta()
+                      ? 'Procesando...'
+                      : 'Cobrar e Imprimir Ticket'
+            }}
           </button>
         </mat-card-actions>
       </mat-card>

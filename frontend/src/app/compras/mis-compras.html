@@ -46,8 +46,10 @@
               {{ p.estado | uppercase }}
             </span>
             <span class="metodo-tag">
-              <mat-icon>credit_card</mat-icon>
-              {{ p.tipo_pago || p.metodo_compra | titlecase }}
+              <mat-icon *ngIf="p.tipo_pago === 'qr'">qr_code_2</mat-icon>
+              <mat-icon *ngIf="p.tipo_pago === 'efectivo'">payments</mat-icon>
+              <mat-icon *ngIf="p.tipo_pago !== 'qr' && p.tipo_pago !== 'efectivo'">credit_card</mat-icon>
+              {{ p.tipo_pago === 'qr' ? 'Pago QR' : (p.tipo_pago === 'efectivo' ? 'Efectivo contra entrega' : (p.tipo_pago || p.metodo_compra | titlecase)) }}
             </span>
           </div>
         </mat-card-header>

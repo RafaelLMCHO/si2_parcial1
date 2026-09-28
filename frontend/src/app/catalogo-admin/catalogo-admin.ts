@@ -92,6 +92,7 @@ export class CatalogoAdminComponent implements OnInit {
   form = this.fb.group({
     nombre: ['', [Validators.required, Validators.minLength(2)]],
     descripcion: [''],
+    prompt_vestidor: [''],
     precio: [null as number | null, [Validators.required, Validators.min(0.01)]],
     categoria_id: [null as number | null, Validators.required],
     temporada_id: [null as number | null, Validators.required],
@@ -146,6 +147,7 @@ export class CatalogoAdminComponent implements OnInit {
     this.form.patchValue({
       nombre: p.nombre,
       descripcion: p.descripcion ?? '',
+      prompt_vestidor: p.prompt_vestidor ?? '',
       precio: Number(p.precio),
       categoria_id: p.categoria_id,
       temporada_id: p.temporada_id,
@@ -234,6 +236,7 @@ export class CatalogoAdminComponent implements OnInit {
     const datos = {
       nombre: this.form.value.nombre!.trim(),
       descripcion: this.form.value.descripcion?.trim() || null,
+      prompt_vestidor: this.form.value.prompt_vestidor?.trim() || null,
       precio: this.form.value.precio!,
       categoria_id: this.form.value.categoria_id!,
       temporada_id: this.form.value.temporada_id!,

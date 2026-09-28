@@ -187,6 +187,7 @@ class ProductoBase(BaseModel):
     proveedor_id: int
     imagen_url: str | None = None
     modelo_3d_url: str | None = None
+    prompt_vestidor: str | None = None
 
 
 class ProductoCreate(ProductoBase):
@@ -203,6 +204,7 @@ class ProductoUpdate(BaseModel):
     proveedor_id: int | None = None
     imagen_url: str | None = None
     modelo_3d_url: str | None = None
+    prompt_vestidor: str | None = None
     activo: bool | None = None
 
 
@@ -375,6 +377,7 @@ class VentaDigitalCreate(BaseModel):
     items: list[CarritoItem] = []
     sucursal_id: int | None = 1
     pasarela: str = "stripe"
+    tipo_pago: str = "tarjeta_credito"
     payment_intent_id: str | None = None
     session_id: str | None = None
     return_url: str | None = None
@@ -398,3 +401,74 @@ class PedidoOut(BaseModel):
     estado: EstadoPedido
     tipo_pago: TipoPago | None
     items: list[PedidoItemOut] = []
+
+
+# ============================================================
+# Cobro QR (pasarela externa)
+# ============================================================
+
+class QrCobroCreate(BaseModel):
+    sucursal_id: int | None = 1
+    items: list[CarritoItem] = []
+
+
+class QrCobroOut(BaseModel):
+    id_pago: int
+    id_pedido: int
+    transaccion_id: str
+    proveedor_pago: str
+    qr_url: str
+    url_pago: str | None = None
+    estado: str
+    simulado: bool
+    expires_at: datetime
+    total: float
+    stock_reservado: bool
+
+
+class QrPagoConfirmarIn(BaseModel):
+    """Lo que el celular devuelve tras pagar en la pagina de la pasarela.
+
+    Solo viaja el session_id de Stripe. El monto, la referencia del cobro y el
+    usuario que lo empezo a pagar los resuelve el servidor: ninguno de esos datos
+    se acepta desde el cliente.
+
+    `numero_tarjeta` solo se mira en modo simulado, para poder demostrar el
+    rechazo sin pasarela. Con Stripe real la tarjeta la evalua Stripe y este campo
+    se ignora por completo.
+    """
+    session_id: str
+    numero_tarjeta: str | None = None
+
+
+# ============================================================
+# Cobro con tarjeta en el punto de venta
+# ============================================================
+# Mismo esqueleto que el cobro QR (pedido pendiente + stock reservado), distinto
+# en como se le pide al cliente que pague: aqui se abre la pagina de la pasarela.
+
+class CobroTarjetaCreate(BaseModel):
+    sucursal_id: int | None = 1
+    items: list[CarritoItem] = []
+    tipo_pago: TipoPago = TipoPago.tarjeta_credito
+
+
+class CobroTarjetaOut(BaseModel):
+    id_pago: int
+    id_pedido: int
+    transaccion_id: str
+    estado: str
+    total: float
+    simulado: bool
+    checkout_url: str | None = None
+
+
+class CobroTarjetaVerificar(BaseModel):
+    """Lo que el punto de venta manda al preguntar si el pago entro.
+
+    `numero_tarjeta` no dice que el pago fue aprobado: es la tarjeta que el
+    cajero dice que uso el cliente, y la decision la toma el servidor. Sin
+    pasarela, `confirmar_pago_simulado` la juzga con las mismas reglas de
+    Stripe (4242... aprueba, ...0002 rechaza).
+    """
+    numero_tarjeta: str | None = None
