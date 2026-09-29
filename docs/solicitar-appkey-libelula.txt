@@ -1,0 +1,121 @@
+Correo para solicitar el App Key de pruebas de Libelula
+=====================================================
+
+A donde va:  libelula@todotix.com
+Asunto:     Solicitud de App Key de pruebas para integracion API
+
+
+-----------------------------------------------------------------------
+TEXTO (copiar desde aca)
+-----------------------------------------------------------------------
+
+Estimados equipo Libelula:
+
+Solicitamos un App Key de pruebas para integrar el punto de venta de
+FashionStore con su API REST, dentro de un proyecto universitario de
+sistemas de informacion.
+
+Solo necesitamos acceso al ambiente de pruebas: no vamos a cobrar con
+dinero real, asi que no hacemos falta el App Key de produccion.
+
+Ademas, una consulta importante: la URL de pruebas que indica el manual
+de integracion v2.7 no responde. Probamos
+
+    http://www.todotix.com:10888/rest/deuda/registrar
+
+y la conexion se agota sin establecer (puerto cerrado). La de
+produccion, https://api.todotix.com, si responde. Por eso les
+preguntamos: cual es hoy la URL vigente del ambiente de pruebas? Puede
+que haya cambiado de puerto o de dominio, o que el ambiente ya no sea
+publico.
+
+Datos para el registro de la empresa:
+
+  - Razon social:  [COMPLETAR]
+  - NIT:           [COMPLETAR]
+  - Ambiente:      testing
+  - Proyecto:      academico, no comercial
+
+El manual de integracion v2.7 indica que este App Key lo entrega
+Libelula a cada empresa. Quedamos atentos a sus instrucciones para
+completar el alta y empezar las pruebas de integracion.
+
+Muchas gracias.
+
+
+-----------------------------------------------------------------------
+NOTAS ANTES DE MANDARLO
+-----------------------------------------------------------------------
+
+1. Completa razon social y NIT. Aunque el sistema este configurado con
+   QR_EMITE_FACTURA=0 (no factura), Libelula igual valida los datos de
+   la empresa al crear la cuenta.
+
+2. YA SE VERIFICO, no hace falta preguntarlo, pero por si insistenten:
+
+       http://www.todotix.com:10888   puerto CERRADO, no responde
+       https://api.todotix.com         responde (produccion)
+
+   El unico ambiente de pruebas documentado esta caido. Por eso el correo
+   pregunta cual es la URL vigente.
+
+3. Si te preguntan por el despliegue: el backend corre local y se
+   expone con un tunel publico temporal (cloudflared) para que
+   Libelula pueda notificar los pagos. Para produccion haria falta un
+   dominio y HTTPS propios.
+
+4. El App Key de ejemplo del manual
+
+       588e5e10-d794-4910-91d2-b3952b54df4d
+
+   YA NO SIRVE para probar: el ambiente de pruebas no responde, y contra
+   produccion no se debe probar un appkey ajeno. Quedo como dato de
+   referencia nomas.
+
+5. Recordatorio del propio manual: un App Key de pruebas NUNCA debe
+   usarse en produccion, y las recaudaciones hechas con el no son
+   honradas.
+
+6. Lo que YA quedo verificado contra la API real (no hace falta
+   preguntarlo, pero sirve para mostrar avance):
+
+   - https://api.todotix.com/rest/deuda/registrar responde
+   - un GET ahi da 405: la ruta existe y solo acepta POST
+   - la respuesta trae error, existente, mensaje, codigo_recaudacion,
+     id_transaccion y url_pasarela_pagos, tal como el codigo ya asumia
+   - 'error: 1' con un appkey desconocido significa "No se ha encontrado
+     ninguna empresa registrada con la AppKey especificada", o sea que
+     la validacion del appkey ocurre primero, antes de mirar el resto
+
+
+-----------------------------------------------------------------------
+QUE HACER CUANDO LLEGA EL APP KEY
+-----------------------------------------------------------------------
+
+Pegarlo en backend/.env y completar el bloque de pasarela:
+
+  QR_PROVEEDOR=libelula
+  QR_APPKEY=<pegar aqui el appkey>
+  QR_BASE_URL=http://www.todotix.com:10888
+  QR_CALLBACK_BASE=<URL publica del tunel>
+  QR_URL_RETORNO=http://localhost:4200/ventas/punto-venta
+  QR_RAZON_SOCIAL=<razon social>
+  QR_NIT=<NIT>
+
+Despues:
+
+  python scripts/verificar_libelula.py
+
+  # el script imprime exactamente que falta, o confirma que la
+  # configuracion esta lista
+
+  powershell -File scripts/probar_tunel_qr.ps1
+
+  # levanta el backend y un tunel publico, y comprueba que la ruta
+  # del webhook sea alcanzable desde internet
+
+  python scripts/verificar_libelula.py --conectar
+
+  # registra una deuda real de Bs. 1 y consulta la conciliacion.
+  # Aca es donde se confirma si el contrato asumido en el codigo
+  # coincide con lo que responde Libelula.

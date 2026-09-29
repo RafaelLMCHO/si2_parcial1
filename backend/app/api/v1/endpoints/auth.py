@@ -43,7 +43,8 @@ def register(data: UsuarioCreate, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=Token, summary="Iniciar sesión (JWT)")
 def login(data: LoginRequest, db: Session = Depends(get_db)):
-    usuario = db.query(Usuario).filter(Usuario.email == data.email).first()
+    email_clean = (data.email or "").strip()
+    usuario = db.query(Usuario).filter(Usuario.email.ilike(email_clean)).first()
     if not usuario or not verify_password(data.contrasena, usuario.contrasena):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -60,7 +61,8 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
 def login_form(
     form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
 ):
-    usuario = db.query(Usuario).filter(Usuario.email == form.username).first()
+    email_clean = (form.username or "").strip()
+    usuario = db.query(Usuario).filter(Usuario.email.ilike(email_clean)).first()
     if not usuario or not verify_password(form.password, usuario.contrasena):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

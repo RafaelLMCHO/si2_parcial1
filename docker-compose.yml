@@ -13,6 +13,10 @@ services:
       - pgdata:/var/lib/postgresql
       - ./database/01_creacion_base_datos.sql:/docker-entrypoint-initdb.d/01_creacion_base_datos.sql:ro
       - ./database/02_poblacion.sql:/docker-entrypoint-initdb.d/02_poblacion.sql:ro
+      - ./database/04_migracion_pagos_qr.sql:/docker-entrypoint-initdb.d/04_migracion_pagos_qr.sql:ro
+      - ./database/05_reparar_secuencias.sql:/docker-entrypoint-initdb.d/05_reparar_secuencias.sql:ro
+      - ./database/06_prompt_vestidor.sql:/docker-entrypoint-initdb.d/06_prompt_vestidor.sql:ro
+      - ./database/07_prompts_vestidor.sql:/docker-entrypoint-initdb.d/07_prompts_vestidor.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d fashionstore"]
       interval: 10s
@@ -25,6 +29,7 @@ services:
     container_name: fashionstore-backend
     restart: unless-stopped
     volumes:
+      - ./backend/app:/app/app
       - backend_uploads:/app/static/uploads
     env_file:
       - ./backend/.env
@@ -32,7 +37,12 @@ services:
       DATABASE_URL: postgresql+psycopg2://postgres:09091991@db:5432/fashionstore
       SECRET_KEY: fashionstore-secret-key-cambiar-en-produccion
       ACCESS_TOKEN_EXPIRE_MINUTES: 120
-      DEBUG: "false"
+      # Necesario para el modo demostracion: sin una clave valida de la pasarela,
+      # los endpoints de cobro solo aceptan pagos simulados cuando DEBUG esta
+      # activo. Con DEBUG en true, un usuario autenticado puede aprobar un cobro
+      # sin que se mueva dinero. Es aceptable en esta maquina de demostracion y
+      # no debe quedar en true en un despliegue real.
+      DEBUG: "true"
     ports:
       - "8000:8000"
     depends_on:

@@ -11,10 +11,12 @@ from app.core.dependencies import encargado_required, get_current_user
 from app.db.session import get_db
 from app.models import (
     Inventario,
+    MovimientoInventario,
     Reserva,
     ReservaItem,
     Sucursal,
     Usuario,
+    TipoMovimiento,
 )
 from app.schemas.comercio import ReservaCreate, ReservaOut
 from app.services.notification_service import NotificationService
@@ -98,17 +100,28 @@ def crear_reserva(
             status_code=400, detail="La fecha de reserva no puede ser anterior a hoy"
         )
 
-    # Verificación de stock en tiempo real (SELECT FOR UPDATE).
-    # La mutación de inventario y la bitácora las realizan los triggers
-    # de la base de datos (trg_reserva_item_insert), evitando duplicar.
-    for item in data.items:
+    # Control de concurrencia estricto (First-Come, First-Served):
+    # Bloqueo pesimista (SELECT ... FOR UPDATE) ordenado canónicamente por variante_id
+    # para evitar cualquier posibilidad de interbloqueo (deadlock).
+    # Si dos clientes intentan reservar simultáneamente, el primero adquiere el bloqueo,
+    # valida y decrementa atómicamente cantidad_disponible. El segundo cliente espera en cola,
+    # y al desbloquearse lee el stock ya reducido; si no alcanza, es rechazado con HTTP 409.
+    items_ordenados = sorted(data.items, key=lambda x: x.variante_id)
+    inventarios_afectados = []
+    for item in items_ordenados:
         inventario = _inventario_con_bloqueo(db, item.variante_id, data.sucursal_id)
         if not inventario or inventario.cantidad_disponible < item.cantidad:
             db.rollback()
             raise HTTPException(
                 status_code=409,
-                detail="Lo sentimos, el stock ha cambiado, revise las cantidades disponibles",
+                detail="Lo sentimos, otro cliente reservó la prenda primero o el stock ya no está disponible en esta sucursal.",
             )
+        inventarios_afectados.append((inventario, item))
+
+    # Descontar stock disponible e incrementar stock reservado
+    for inventario, item in inventarios_afectados:
+        inventario.cantidad_disponible -= item.cantidad
+        inventario.cantidad_reservada += item.cantidad
 
     try:
         reserva = Reserva(
@@ -120,7 +133,7 @@ def crear_reserva(
         db.add(reserva)
         db.flush()  # obtener id_reserva
 
-        for item in data.items:
+        for inventario, item in inventarios_afectados:
             db.add(
                 ReservaItem(
                     reserva_id=reserva.id_reserva,
@@ -128,13 +141,23 @@ def crear_reserva(
                     cantidad=item.cantidad,
                 )
             )
+            db.add(
+                MovimientoInventario(
+                    variante_id=item.variante_id,
+                    sucursal_id=data.sucursal_id,
+                    tipo_movimiento=TipoMovimiento.reserva,
+                    cantidad=item.cantidad,
+                    referencia_id=reserva.id_reserva,
+                    observacion=f"Reserva #{reserva.id_reserva} creada",
+                )
+            )
 
         db.commit()
-    except IntegrityError:
+    except (IntegrityError, Exception) as exc:
         db.rollback()
         raise HTTPException(
             status_code=409,
-            detail="Lo sentimos, el stock ha cambiado, revise las cantidades disponibles",
+            detail="Lo sentimos, otro cliente reservó la prenda primero o el stock ya no está disponible en esta sucursal.",
         )
 
     db.refresh(reserva)
@@ -200,8 +223,23 @@ def cancelar_reserva(
     if reserva.estado not in ("pendiente", "preparada"):
         raise HTTPException(status_code=400, detail="No se puede cancelar en este estado")
 
-    # El trigger trg_reserva_cancelada libera el stock reservado y
-    # registra el movimiento de inventario correspondiente.
+    # Liberar el stock reservado y restaurar cantidad disponible
+    for item in reserva.items:
+        inventario = _inventario_con_bloqueo(db, item.variante_id, reserva.sucursal_id)
+        if inventario:
+            inventario.cantidad_disponible += item.cantidad
+            inventario.cantidad_reservada = max(0, inventario.cantidad_reservada - item.cantidad)
+            db.add(
+                MovimientoInventario(
+                    variante_id=item.variante_id,
+                    sucursal_id=reserva.sucursal_id,
+                    tipo_movimiento=TipoMovimiento.cancelacion_reserva,
+                    cantidad=item.cantidad,
+                    referencia_id=reserva.id_reserva,
+                    observacion=f"Reserva #{reserva.id_reserva} cancelada (stock liberado)",
+                )
+            )
+
     reserva.estado = "cancelada"
     db.commit()
     db.refresh(reserva)
@@ -245,6 +283,13 @@ def completar_reserva(
     reserva = _reserva_con_items(db, reserva_id)
     if reserva.estado not in ("pendiente", "preparada"):
         raise HTTPException(status_code=400, detail="Estado inválido")
+    
+    # Al completar la reserva, se descuenta de la cantidad_reservada
+    for item in reserva.items:
+        inventario = _inventario_con_bloqueo(db, item.variante_id, reserva.sucursal_id)
+        if inventario:
+            inventario.cantidad_reservada = max(0, inventario.cantidad_reservada - item.cantidad)
+
     reserva.estado = "completada"
     db.commit()
     db.refresh(reserva)

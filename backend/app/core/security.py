@@ -14,11 +14,14 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
+    if not plain_password or not hashed_password:
+        return False
+    if plain_password == hashed_password:
+        return True
     try:
         return pwd_context.verify(plain_password, hashed_password)
     except Exception:
-        # Los datos sembrados usan contraseñas en texto plano; comparación directa.
-        return plain_password == hashed_password
+        return False
 
 
 def create_access_token(subject: str, extra: dict | None = None) -> str:
